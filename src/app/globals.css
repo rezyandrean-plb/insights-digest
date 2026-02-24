@@ -1,26 +1,154 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #e8f4f2;
+  --foreground: #1a1a2e;
+  --primary: #2a9d8f;
+  --primary-dark: #238b7e;
+  --primary-light: #3dbfb0;
+  --secondary: #264653;
+  --accent: #e76f51;
+  --muted: #6b7280;
+  --muted-light: #9ca3af;
+  --border: #c8ddd9;
+  --card-bg: #ffffff;
+  --section-bg: #dceee9;
+  --page-bg: #e8f4f2;
+  --hero-overlay: rgba(0, 0, 0, 0.45);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-muted-light: var(--muted-light);
+  --color-border: var(--border);
+  --color-card-bg: var(--card-bg);
+  --color-section-bg: var(--section-bg);
+  --font-sans: var(--font-poppins), "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility classes */
+.container-custom {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-custom {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-custom {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Category badge colors */
+.badge-property {
+  background-color: #ebf5f4;
+  color: #2a9d8f;
+}
+
+.badge-market {
+  background-color: #fef3e6;
+  color: #e76f51;
+}
+
+.badge-investment {
+  background-color: #eef0f5;
+  color: #264653;
+}
+
+.badge-news {
+  background-color: #f0e6ff;
+  color: #7c3aed;
+}
+
+.badge-market-analysis {
+  background-color: #e8f0fe;
+  color: #1a56db;
+}
+
+.badge-real-estate-news {
+  background-color: #fef3e6;
+  color: #d97706;
+}
+
+.badge-guides {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.badge-housing-life {
+  background-color: #fdf2f8;
+  color: #db2777;
+}
+
+.badge-project-reviews {
+  background-color: #f0f4ff;
+  color: #4338ca;
+}
+
+.badge-home-decor {
+  background-color: #fff7ed;
+  color: #c2410c;
+}
+
+/* Featured stories horizontal scroll */
+.featured-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.featured-scroll::-webkit-scrollbar {
+  display: none;
 }
