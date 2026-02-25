@@ -15,9 +15,9 @@ const filterTabs: { label: string; value: ArticleCategory | "All" }[] = [
     { label: "Market Analysis", value: "Market Analysis" },
     { label: "Real Estate News", value: "Real Estate News" },
     { label: "Guides", value: "Guides" },
-    { label: "Housing & Life", value: "Housing & Life" },
+    { label: "Home & Life", value: "Home & Life" },
     { label: "Project Reviews", value: "Project Reviews" },
-    { label: "Home Decor", value: "Home Decor" },
+    { label: "Home Radar", value: "Home Radar" },
 ];
 
 const ARTICLES_PER_PAGE = 9;

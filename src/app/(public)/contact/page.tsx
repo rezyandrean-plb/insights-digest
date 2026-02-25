@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, Send, FileText, BarChart3, Rocket, Megaphone, ArrowRight } from "lucide-react";
+import { Mail, Send, FileText, BarChart3, Rocket, Megaphone, ArrowRight, CheckCircle2 } from "lucide-react";
 import Newsletter from "@/components/Newsletter";
 import ScrollReveal from "@/components/ScrollReveal";
+import { articles } from "@/lib/data";
 
 const enquiryTypes = ["Brand / Media Collaboration", "Private Property Advisory"] as const;
 const timelineOptions = ["Within 2 weeks", "Within 1 month", "1–3 months", "Exploratory"];
@@ -78,26 +80,30 @@ function RadioGroup({
 }) {
     return (
         <div className="flex flex-wrap gap-2">
-            {options.map((opt) => (
-                <label
-                    key={opt}
-                    className={`cursor-pointer rounded-lg border px-3.5 py-2 text-sm transition-all duration-150 ${
-                        value === opt
-                            ? "border-[#195F60] bg-[#195F60]/5 text-[#195F60] font-medium"
-                            : "border-secondary/15 text-secondary/70 hover:border-secondary/30"
-                    }`}
-                >
-                    <input
-                        type="radio"
-                        name={name}
-                        value={opt}
-                        checked={value === opt}
-                        onChange={onChange}
-                        className="sr-only"
-                    />
-                    {opt}
-                </label>
-            ))}
+            {options.map((opt) => {
+                const isSelected = value === opt;
+                return (
+                    <label
+                        key={opt}
+                        className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3.5 py-2 text-sm transition-all duration-150 ${
+                            isSelected
+                                ? "border-[#195F60] bg-[#195F60]/5 text-[#195F60] font-medium"
+                                : "border-secondary/15 text-secondary/70 hover:border-secondary/30"
+                        }`}
+                    >
+                        <input
+                            type="radio"
+                            name={name}
+                            value={opt}
+                            checked={isSelected}
+                            onChange={onChange}
+                            className="sr-only"
+                        />
+                        {isSelected && <CheckCircle2 className="w-4 h-4 shrink-0 text-[#195F60]" aria-hidden />}
+                        {opt}
+                    </label>
+                );
+            })}
         </div>
     );
 }
@@ -132,10 +138,15 @@ export default function ContactPage() {
 
     return (
         <>
-            {/* Hero */}
-            <section className="relative bg-[#195F60] py-16 sm:py-20 lg:py-28 overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.06)_0%,transparent_50%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.04)_0%,transparent_50%)]" />
+            {/* Hero — background image from all-articles, same copy */}
+            <section className="relative py-16 sm:py-20 lg:py-28 overflow-hidden min-h-[320px] sm:min-h-[380px] lg:min-h-[420px]">
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{
+                        backgroundImage: `url(${articles[0]?.image ?? "https://images.unsplash.com/photo-1524813686514-a57563d77965?w=1400&q=80"})`,
+                    }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/20" />
                 <div className="container-custom relative">
                     <ScrollReveal>
                         <span className="inline-block text-sm font-medium text-white/50 tracking-wide uppercase mb-4">
@@ -147,12 +158,19 @@ export default function ContactPage() {
                         <p className="text-lg sm:text-xl text-white/70 mt-5 max-w-lg leading-relaxed">
                             We create real estate content people trust.
                         </p>
+                        <Link
+                            href="/all-articles"
+                            className="inline-flex items-center gap-2 mt-8 text-sm font-semibold text-white hover:text-white/90 transition-colors"
+                        >
+                            Explore our articles
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
                     </ScrollReveal>
                 </div>
             </section>
 
             {/* About + Collaborate */}
-            <section className="py-14 sm:py-20 lg:py-24">
+            <section className="pt-14 sm:pt-20 lg:pt-24 pb-8 sm:pb-12 lg:pb-14">
                 <div className="container-custom">
                     <div className="max-w-2xl mx-auto lg:mx-0 lg:max-w-none lg:grid lg:grid-cols-[1fr_1fr] lg:gap-16 xl:gap-24 items-start">
                         <ScrollReveal direction="left">
@@ -204,7 +222,7 @@ export default function ContactPage() {
             <div className="container-custom"><div className="border-t border-border/40" /></div>
 
             {/* Form + Sidebar */}
-            <section className="py-14 sm:py-20 lg:py-24">
+            <section className="pt-8 sm:pt-12 lg:pt-14 pb-14 sm:pb-20 lg:pb-24">
                 <div className="container-custom">
                     <ScrollReveal>
                         <div className="text-center max-w-lg mx-auto mb-12 sm:mb-16">
@@ -237,26 +255,34 @@ export default function ContactPage() {
                                             I am enquiring about: *
                                         </p>
                                         <div className="flex gap-3">
-                                            {enquiryTypes.map((option) => (
-                                                <label
-                                                    key={option}
-                                                    className={`flex-1 cursor-pointer rounded-xl border-2 p-4 text-center text-sm font-medium transition-all duration-150 ${
-                                                        enquiryAbout === option
-                                                            ? "border-[#195F60] bg-[#195F60]/5 text-[#195F60]"
-                                                            : "border-secondary/10 text-secondary/60 hover:border-secondary/25"
-                                                    }`}
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        name="enquiryAbout"
-                                                        value={option}
-                                                        checked={enquiryAbout === option}
-                                                        onChange={(e) => setEnquiryAbout(e.target.value)}
-                                                        className="sr-only"
-                                                    />
-                                                    {option}
-                                                </label>
-                                            ))}
+                                            {enquiryTypes.map((option) => {
+                                                const isSelected = enquiryAbout === option;
+                                                return (
+                                                    <label
+                                                        key={option}
+                                                        className={`relative flex-1 cursor-pointer rounded-xl border-2 p-4 pr-10 text-center text-sm font-medium transition-all duration-150 ${
+                                                            isSelected
+                                                                ? "border-[#195F60] bg-[#195F60]/5 text-[#195F60]"
+                                                                : "border-secondary/10 text-secondary/60 hover:border-secondary/25"
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="enquiryAbout"
+                                                            value={option}
+                                                            checked={isSelected}
+                                                            onChange={(e) => setEnquiryAbout(e.target.value)}
+                                                            className="sr-only"
+                                                        />
+                                                        {option}
+                                                        {isSelected && (
+                                                            <span className="absolute top-3 right-3 text-[#195F60]" aria-hidden>
+                                                                <CheckCircle2 className="w-5 h-5" />
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 

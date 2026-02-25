@@ -62,7 +62,7 @@ export default function ArticlePage() {
                 </h1>
 
                 {/* Meta line */}
-                <div className="flex items-center flex-wrap gap-0 mt-4 text-sm text-secondary/50">
+                <div className="flex items-center flex-wrap gap-0 mt-4 text-sm text-black">
                     <span>Singapore&apos;s Coastal Property Frontier</span>
                     <span className="mx-2">|</span>
                     <span>{article.author}</span>
@@ -84,7 +84,7 @@ export default function ArticlePage() {
                         </div>
 
                         {/* Lead paragraph */}
-                        <p className="text-sm sm:text-base text-secondary/70 leading-relaxed mb-10">
+                        <p className="text-sm sm:text-base text-black leading-relaxed mb-10">
                             Yesterday, a team of analysts departed from the Keppel Bay Tower, embarking on a fact-finding mission to Sentosa Cove. HDB is set to introduce sustainable living concepts in Punggol Northshore with new eco-friendly housing projects.
                         </p>
 
@@ -97,7 +97,7 @@ export default function ArticlePage() {
                                 {section.paragraphs.map((p, i) => (
                                     <p
                                         key={i}
-                                        className="text-sm sm:text-base text-secondary/70 leading-relaxed mb-4"
+                                        className="text-sm sm:text-base text-black leading-relaxed mb-4"
                                     >
                                         {p}
                                     </p>
@@ -117,16 +117,16 @@ export default function ArticlePage() {
 
                     {/* Right: Sticky sidebar */}
                     <aside className="hidden lg:block w-[35%]">
-                        <div className="sticky top-28">
+                        <div className="sticky top-28 pt-4 lg:pt-6">
                             {/* Social share buttons */}
-                            <div className="flex flex-wrap items-center gap-2 mb-8">
+                            <div className="flex flex-nowrap items-center gap-2 mb-8 overflow-x-auto pb-1">
                                 {socialLinks.map((s) => (
                                     <a
                                         key={s.label}
                                         href={s.href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 bg-[#195F60] text-white pl-2.5 pr-1 py-1.5 rounded-full text-xs font-medium hover:bg-[#195F60]/90 transition-colors"
+                                        className="inline-flex items-center gap-1.5 shrink-0 bg-[#195F60] text-white pl-2.5 pr-1 py-1.5 rounded-full text-xs font-medium hover:bg-[#195F60]/90 transition-colors"
                                         aria-label={s.label}
                                     >
                                         <span dangerouslySetInnerHTML={{ __html: s.icon }} />

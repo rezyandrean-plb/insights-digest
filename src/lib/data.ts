@@ -13,9 +13,9 @@ export type ArticleCategory =
     | "Market Analysis"
     | "Real Estate News"
     | "Guides"
-    | "Housing & Life"
+    | "Home & Life"
     | "Project Reviews"
-    | "Home Decor";
+    | "Home Radar";
 
 export interface Article {
     id: string;
@@ -222,7 +222,7 @@ export const articles: Article[] = [
         title: "HDB Unveils Plans for Eco-Friendly Housing in Punggol Northshore",
         excerpt:
             "HDB is set to introduce sustainable living concepts in Punggol Northshore with new eco-friendly housing developments featuring green corridors and energy-efficient designs.",
-        category: "Housing & Life",
+        category: "Home & Life",
         image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
         author: "Rachel Koh",
         date: "Jan 30, 2026",
@@ -294,7 +294,7 @@ export const articles: Article[] = [
         title: "GuocoLand Launches Smart Home Initiatives in New District",
         excerpt:
             "GuocoLand introduces cutting-edge smart home technologies in its newest district development, offering residents seamless automation and IoT-enabled living.",
-        category: "Home Decor",
+        category: "Home Radar",
         image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&q=80",
         author: "Lisa Ng",
         date: "Jan 18, 2026",
@@ -366,7 +366,7 @@ export const articles: Article[] = [
         title: "Minimalist Living: How to Transform Your HDB Flat Into a Modern Sanctuary",
         excerpt:
             "Interior design experts share practical tips for embracing minimalist living in compact HDB flats, maximising space with clean lines, neutral tones, and smart storage.",
-        category: "Home Decor",
+        category: "Home Radar",
         image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
         author: "Amanda Lee",
         date: "Jan 6, 2026",
@@ -378,7 +378,7 @@ export const articles: Article[] = [
         title: "Biophilic Design Trends Reshaping Singapore's New Condominiums",
         excerpt:
             "Developers are increasingly incorporating biophilic design — natural light, greenery, and organic materials — into new condo projects, blurring the line between indoors and outdoors.",
-        category: "Home Decor",
+        category: "Home Radar",
         image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80",
         author: "Lisa Ng",
         date: "Jan 4, 2026",
@@ -414,7 +414,7 @@ export const articles: Article[] = [
         title: "Community Living Redefined: Inside Tengah's Eco-Town Blueprint",
         excerpt:
             "Singapore's first car-free town centre in Tengah promises a new model of community living with integrated green features, shared spaces, and pedestrian-friendly design.",
-        category: "Housing & Life",
+        category: "Home & Life",
         image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
         author: "Dennis Tan",
         date: "Dec 26, 2025",
