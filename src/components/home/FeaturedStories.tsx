@@ -9,12 +9,13 @@ import ScrollReveal from "@/components/ScrollReveal";
 
 interface FeaturedStoriesProps {
     articles: Article[];
+    title?: string;
 }
 
 const filters = ["Most Viewed", "Latest", "Editor's Pick"] as const;
 const CARDS_PER_PAGE = 3;
 
-export default function FeaturedStories({ articles }: FeaturedStoriesProps) {
+export default function FeaturedStories({ articles, title = "Featured Stories" }: FeaturedStoriesProps) {
     const [activeFilter, setActiveFilter] = useState<string>("Most Viewed");
     const [page, setPage] = useState(0);
     const totalPages = Math.ceil(articles.length / CARDS_PER_PAGE);
@@ -43,7 +44,7 @@ export default function FeaturedStories({ articles }: FeaturedStoriesProps) {
                 <ScrollReveal>
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-xl sm:text-2xl font-bold text-secondary">
-                            Featured Stories
+                            {title}
                         </h2>
 
                         <div className="flex items-center gap-3">

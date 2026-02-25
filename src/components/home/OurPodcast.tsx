@@ -3,6 +3,16 @@
 import Link from "next/link";
 import { Play } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import type { HomepagePodcast, HomepageNugget } from "@/lib/homepage-config";
+
+const defaultPodcastData: HomepagePodcast = {
+    label: "Latest Podcast",
+    title: "Who Really Controls Property Valuations? And How to Spot Undervalued Units Today | NOTG S3 Ep 121",
+    description:
+        "Property valuations—who decides? In this episode of NOTG, Alfred, Jesley, and Yu Rong from PropertyLimBrothers break down the real story behind property valuations—and why they often don't match what you see on paper. They talk about how valuations are formed, what influences them, and when it makes sense to challenge the numbers.",
+    thumbnail: "/images/homepage/our-podcasts.webp",
+    slug: "notg-s3-ep121-property-valuations",
+};
 
 const nuggets = [
     {
@@ -49,17 +59,18 @@ const nuggets = [
     },
 ];
 
-const podcastData = {
-    label: "Latest Podcast",
-    title: "Who Really Controls Property Valuations? And How to Spot Undervalued Units Today | NOTG S3 Ep 121",
-    description:
-        "Property valuations—who decides? In this episode of NOTG, Alfred, Jesley, and Yu Rong from PropertyLimBrothers break down the real story behind property valuations—and why they often don't match what you see on paper. They talk about how valuations are formed, what influences them, and when it makes sense to challenge the numbers.",
-    thumbnail:
-        "/images/homepage/our-podcasts.webp",
-    slug: "notg-s3-ep121-property-valuations",
-};
+interface OurPodcastProps {
+    title?: string;
+    podcast?: HomepagePodcast;
+    nuggetsTitle?: string;
+    nuggets?: HomepageNugget[];
+}
 
-export default function OurPodcast() {
+export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: nuggetsTitleProp, nuggets: nuggetsProp }: OurPodcastProps) {
+    const podcastData = podcastProp ?? defaultPodcastData;
+    const sectionLabel = title ?? podcastData.label;
+    const nuggetsTitle = nuggetsTitleProp ?? "Nuggets On The Go";
+    const nuggetsList = nuggetsProp && nuggetsProp.length > 0 ? nuggetsProp : nuggets;
     return (
         <section className="py-0">
             <ScrollReveal>
@@ -68,7 +79,7 @@ export default function OurPodcast() {
                     <div className="flex-1 bg-secondary flex flex-col sm:flex-row gap-0 py-8 sm:py-10">
                         <div className="sm:w-[35%] flex flex-col justify-center ml-0 pl-6 pr-6 sm:ml-6 sm:pl-8 sm:pr-8 lg:ml-[calc((100vw-1280px)/2+2rem)] border-l border-r border-white/15">
                             <span className="text-primary text-xs sm:text-sm font-medium tracking-wide">
-                                {podcastData.label}
+                                {sectionLabel}
                             </span>
                             <h3 className="text-[20px] font-medium text-white leading-[125%] mt-3 font-[var(--font-poppins)] max-w-none sm:max-w-[220px]">
                                 {podcastData.title}
@@ -107,7 +118,7 @@ export default function OurPodcast() {
                     <div className="border-t border-primary/30 pt-8 sm:pt-10">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl sm:text-2xl font-medium text-secondary font-[var(--font-poppins)]">
-                                Nuggets On The Go
+                                {nuggetsTitle}
                             </h3>
                             <Link
                                 href="#"
@@ -118,10 +129,10 @@ export default function OurPodcast() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 lg:gap-x-14 gap-y-6 sm:gap-y-8">
-                            {nuggets.map((item) => (
+                            {nuggetsList.map((item) => (
                                 <Link
                                     key={item.id}
-                                    href={`#`}
+                                    href="#"
                                     className="flex items-center gap-4 sm:gap-5 group"
                                 >
                                     <div className="flex-1 min-w-0">

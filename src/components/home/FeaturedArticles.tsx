@@ -11,9 +11,10 @@ type FeaturedFilter = (typeof filterTabs)[number];
 
 interface FeaturedArticlesProps {
     articles: Article[];
+    title?: string;
 }
 
-export default function FeaturedArticles({ articles }: FeaturedArticlesProps) {
+export default function FeaturedArticles({ articles, title = "Featured Articles" }: FeaturedArticlesProps) {
     const [activeFilter, setActiveFilter] = useState<FeaturedFilter>("Market Analysis");
 
     const filteredArticles = useMemo(() => {
@@ -28,7 +29,7 @@ export default function FeaturedArticles({ articles }: FeaturedArticlesProps) {
                 <ScrollReveal>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 sm:mb-10">
                         <h2 className="text-xl sm:text-2xl font-medium text-primary font-[var(--font-poppins)]">
-                            Featured Articles
+                            {title}
                         </h2>
                         <div className="flex flex-wrap items-center gap-2">
                             {filterTabs.map((tab) => (

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Search } from "lucide-react";
-import { reels } from "@/lib/data";
+import { ChevronLeft, ChevronRight, Play, Search, Loader2 } from "lucide-react";
 import type { Reel } from "@/lib/data";
 import ScrollReveal from "@/components/ScrollReveal";
 import Newsletter from "@/components/Newsletter";
@@ -13,19 +12,52 @@ type ReelFilter = (typeof filterTabs)[number];
 
 const REELS_PER_PAGE = 12;
 
+function getVideoEmbedUrl(url: string): string | null {
+    const u = url.trim();
+    const ytMatch = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    const vimeoMatch = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    return null;
+}
+
+function isDirectVideoUrl(url: string): boolean {
+    return /\.(mp4|webm|ogg)(\?|$)/i.test(url) || url.includes("video/mp4");
+}
+
 export default function AllReelsPage() {
+    const [reelsList, setReelsList] = useState<Reel[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<ReelFilter>("Most Viewed");
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
 
+    useEffect(() => {
+        setLoading(true);
+        fetch("/api/reels")
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to fetch reels");
+                return res.json();
+            })
+            .then((data: Reel[] | { error?: string }) => {
+                if (Array.isArray(data)) {
+                    setReelsList(data);
+                } else {
+                    setReelsList([]);
+                }
+            })
+            .catch(() => setReelsList([]))
+            .finally(() => setLoading(false));
+    }, []);
+
     const filteredReels = useMemo(() => {
-        let result: Reel[] = reels.filter((r) => r.category === activeFilter);
+        let result: Reel[] = reelsList.filter((r) => r.category === activeFilter);
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             result = result.filter((r) => r.title.toLowerCase().includes(q));
         }
         return result;
-    }, [activeFilter, searchQuery]);
+    }, [reelsList, activeFilter, searchQuery]);
 
     const totalPages = Math.ceil(filteredReels.length / REELS_PER_PAGE);
     const paginatedReels = filteredReels.slice(
@@ -118,7 +150,17 @@ export default function AllReelsPage() {
                         </div>
                     </ScrollReveal>
 
+                    {/* Loading state */}
+                    {loading && (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <Loader2 className="w-10 h-10 animate-spin text-[#195F60]" />
+                            <p className="text-secondary/70 text-sm">Loading reels...</p>
+                        </div>
+                    )}
+
                     {/* Reels Grid */}
+                    {!loading && (
+                    <>
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={`${activeFilter}-${currentPage}-${searchQuery}`}
@@ -128,36 +170,123 @@ export default function AllReelsPage() {
                             transition={{ duration: 0.3, ease: "easeInOut" }}
                             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 lg:gap-x-8 lg:gap-y-10"
                         >
-                            {paginatedReels.map((reel) => (
-                                <div key={reel.id} className="group cursor-pointer">
+                            {paginatedReels.map((reel) => {
+                                const videoLink = reel.videoUrl?.trim();
+                                const hasThumbnail = Boolean(reel.thumbnail?.trim());
+                                const showVideoInstead =
+                                    !hasThumbnail && videoLink;
+                                const embedUrl = videoLink
+                                    ? getVideoEmbedUrl(videoLink)
+                                    : null;
+                                const directVideo =
+                                    videoLink && isDirectVideoUrl(videoLink);
+
+                                const mediaBlock = hasThumbnail ? (
+                                    <img
+                                        src={reel.thumbnail}
+                                        alt={reel.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                ) : showVideoInstead && embedUrl ? (
+                                    <iframe
+                                        src={embedUrl}
+                                        title={reel.title}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                ) : showVideoInstead && directVideo ? (
+                                    <video
+                                        src={videoLink}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        controls
+                                        playsInline
+                                        preload="metadata"
+                                    />
+                                ) : showVideoInstead && videoLink ? (
+                                    <a
+                                        href={videoLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="absolute inset-0 flex items-center justify-center bg-secondary/10 hover:bg-secondary/20 transition-colors"
+                                    >
+                                        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center group-hover:bg-white/30 transition-all">
+                                            <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                                        </div>
+                                        <span className="sr-only">Play video</span>
+                                    </a>
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-secondary/10">
+                                        <Play className="w-12 h-12 text-secondary/30" />
+                                    </div>
+                                );
+
+                                const content = (
                                     <motion.div
                                         whileHover={{ y: -4 }}
                                         transition={{ duration: 0.2 }}
                                     >
-                                        <div className="relative aspect-square rounded-2xl overflow-hidden mb-3">
-                                            <img
-                                                src={reel.thumbnail}
-                                                alt={reel.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                                            {/* Play button */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
-                                                    <Play className="w-6 h-6 text-white fill-white ml-0.5" />
-                                                </div>
-                                            </div>
-                                            {/* Duration badge */}
-                                            <span className="absolute bottom-3 right-3 bg-black/60 text-white text-[11px] font-medium px-2 py-0.5 rounded">
-                                                {reel.duration}
-                                            </span>
+                                        <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 bg-secondary/5">
+                                            {mediaBlock}
+                                            {hasThumbnail && (
+                                                <>
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+                                                            <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                                                        </div>
+                                                    </div>
+                                                    {reel.duration && (
+                                                        <span className="absolute bottom-3 right-3 bg-black/60 text-white text-[11px] font-medium px-2 py-0.5 rounded">
+                                                            {reel.duration}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                            {showVideoInstead && reel.duration && (
+                                                <span className="absolute bottom-3 right-3 bg-black/60 text-white text-[11px] font-medium px-2 py-0.5 rounded">
+                                                    {reel.duration}
+                                                </span>
+                                            )}
                                         </div>
                                         <p className="text-sm font-medium text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                             {reel.title}
                                         </p>
                                     </motion.div>
-                                </div>
-                            ))}
+                                );
+
+                                if (hasThumbnail && videoLink) {
+                                    return (
+                                        <a
+                                            key={reel.id}
+                                            href={videoLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group cursor-pointer block"
+                                        >
+                                            {content}
+                                        </a>
+                                    );
+                                }
+                                if (showVideoInstead && !embedUrl && !directVideo && videoLink) {
+                                    return (
+                                        <a
+                                            key={reel.id}
+                                            href={videoLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group cursor-pointer block"
+                                        >
+                                            {content}
+                                        </a>
+                                    );
+                                }
+                                return (
+                                    <div key={reel.id} className="group block">
+                                        {content}
+                                    </div>
+                                );
+                            })}
                         </motion.div>
                     </AnimatePresence>
 
@@ -220,6 +349,8 @@ export default function AllReelsPage() {
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
+                    )}
+                    </>
                     )}
                 </div>
             </section>

@@ -30,6 +30,7 @@ export interface Article {
     date: string;
     readTime: string;
     featured?: boolean;
+    isHero?: boolean;
 }
 
 export const articles: Article[] = [
@@ -606,6 +607,7 @@ export interface Reel {
     thumbnail: string;
     duration: string;
     category: "Most Viewed" | "Latest" | "Editor's Pick";
+    videoUrl?: string;
 }
 
 export const reels: Reel[] = [
@@ -955,6 +957,7 @@ export interface NewLaunchItem {
     image: string;
     category: "Most Viewed" | "Latest" | "Editor's Pick";
     readTime: string;
+    isHero?: boolean;
 }
 
 export const newLaunchSeries: NewLaunchItem[] = [
@@ -1294,6 +1297,7 @@ export interface HomeTourItem {
     image: string;
     category: HomeTourCategory;
     readTime: string;
+    isHero?: boolean;
 }
 
 export const homeTourSeries: HomeTourItem[] = [

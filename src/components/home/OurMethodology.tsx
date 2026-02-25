@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { Play, ArrowRight } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import type { HomepageMethodologyItem } from "@/lib/homepage-config";
 
-const methodologyItems = [
+const defaultMethodologyItems: HomepageMethodologyItem[] = [
     {
         id: "1",
         title: "PLB Signature Home Tour Videos: Why Home Tours Are Important In Selling Properties",
@@ -34,13 +35,20 @@ const methodologyItems = [
     },
 ];
 
-export default function OurMethodology() {
+interface OurMethodologyProps {
+    title?: string;
+    items?: HomepageMethodologyItem[];
+}
+
+export default function OurMethodology({ title = "Our Methodology", items }: OurMethodologyProps) {
+    const methodologyItems = items && items.length > 0 ? items : defaultMethodologyItems;
+
     return (
         <section className="py-12 sm:py-16 lg:py-20 bg-[#F1EDEB]">
             <div className="container-custom">
                 <ScrollReveal>
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary text-center mb-10 sm:mb-14 font-[var(--font-poppins)]">
-                        Our Methodology
+                        {title}
                     </h2>
                 </ScrollReveal>
 

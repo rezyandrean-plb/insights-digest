@@ -6,9 +6,10 @@ import ScrollReveal from "@/components/ScrollReveal";
 
 interface LatestPostsProps {
     articles: Article[];
+    title?: string;
 }
 
-export default function LatestPosts({ articles }: LatestPostsProps) {
+export default function LatestPosts({ articles, title = "Latest Post" }: LatestPostsProps) {
     return (
         <section className="pb-10 sm:pb-14 lg:pb-16 bg-[#CBEAED]">
             <div className="container-custom">
@@ -17,7 +18,7 @@ export default function LatestPosts({ articles }: LatestPostsProps) {
 
                 <ScrollReveal>
                     <h2 className="text-lg sm:text-xl font-bold text-secondary mb-6">
-                        Latest Post
+                        {title}
                     </h2>
                 </ScrollReveal>
 

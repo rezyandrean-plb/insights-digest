@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Search, ArrowRight } from "lucide-react";
-import { homeTourSeries } from "@/lib/data";
+import { ChevronLeft, ChevronRight, Play, Search, ArrowRight, Loader2 } from "lucide-react";
 import type { HomeTourCategory, HomeTourItem } from "@/lib/data";
 import ScrollReveal from "@/components/ScrollReveal";
 import Newsletter from "@/components/Newsletter";
@@ -13,21 +12,54 @@ const filterTabs: HomeTourCategory[] = ["Condo", "HDB", "Landed", "Apartment", "
 
 const ITEMS_PER_PAGE = 12;
 
+const DEFAULT_HERO: HomeTourItem = {
+    id: "",
+    slug: "",
+    title: "Springdale View – Freehold 6-Bedroom Inter-Terrace in District 26",
+    excerpt: "Explore this freehold inter-terrace in District 26 with 6 bedrooms and generous living spaces.",
+    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80",
+    category: "Condo",
+    readTime: "5 mins read",
+};
+
 export default function AllHomeTourSeriesPage() {
+    const [itemsList, setItemsList] = useState<HomeTourItem[]>([]);
+    const [heroItem, setHeroItem] = useState<HomeTourItem | null>(null);
+    const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<HomeTourCategory>("Condo");
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
 
-    const featuredItem = homeTourSeries[0];
+    const displayHero = heroItem ?? DEFAULT_HERO;
+
+    useEffect(() => {
+        setLoading(true);
+        Promise.all([
+            fetch("/api/home-tours").then((res) => {
+                if (!res.ok) throw new Error("Failed to fetch");
+                return res.json();
+            }),
+            fetch("/api/home-tours/hero").then((res) => res.json()),
+        ])
+            .then(([listData, heroData]: [HomeTourItem[] | { error?: string }, HomeTourItem | null]) => {
+                setItemsList(Array.isArray(listData) ? listData : []);
+                setHeroItem(heroData && heroData.id ? heroData : null);
+            })
+            .catch(() => {
+                setItemsList([]);
+                setHeroItem(null);
+            })
+            .finally(() => setLoading(false));
+    }, []);
 
     const filteredItems = useMemo(() => {
-        let result: HomeTourItem[] = homeTourSeries.filter((item) => item.category === activeFilter);
+        let result: HomeTourItem[] = itemsList.filter((item) => item.category === activeFilter);
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             result = result.filter((item) => item.title.toLowerCase().includes(q));
         }
         return result;
-    }, [activeFilter, searchQuery]);
+    }, [itemsList, activeFilter, searchQuery]);
 
     const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
     const paginatedItems = filteredItems.slice(
@@ -83,28 +115,18 @@ export default function AllHomeTourSeriesPage() {
                     <div className="max-w-3xl mx-auto">
                         <div className="relative aspect-video rounded-2xl overflow-hidden group cursor-pointer">
                             <img
-                                src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80"
-                                alt="Treasure At Tampines"
+                                src={displayHero.image || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80"}
+                                alt={displayHero.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
                             <div className="absolute bottom-4 left-4">
                                 <span className="bg-primary text-white text-xs font-medium px-3 py-1 rounded">
-                                    $1,250,000
+                                    {displayHero.category}
                                 </span>
                                 <p className="text-white text-xs mt-1.5 drop-shadow-lg">
-                                    99 Year Leasehold · District 18
+                                    {displayHero.readTime}
                                 </p>
-                            </div>
-                            <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80"
-                                        alt="George Peng"
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <span className="text-white text-xs font-medium drop-shadow-lg">GEORGE PENG</span>
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
@@ -112,8 +134,8 @@ export default function AllHomeTourSeriesPage() {
                                 </div>
                             </div>
                             <div className="absolute top-4 left-4">
-                                <span className="bg-primary/90 text-white text-sm font-bold px-3 py-1.5 rounded">
-                                    Treasure At Tampines
+                                <span className="bg-primary/90 text-white text-sm font-bold px-3 py-1.5 rounded line-clamp-1 max-w-[200px] sm:max-w-none">
+                                    {displayHero.title}
                                 </span>
                             </div>
                         </div>
@@ -121,16 +143,13 @@ export default function AllHomeTourSeriesPage() {
 
                     <div className="max-w-3xl mx-auto mt-6 text-center">
                         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-secondary leading-snug font-[var(--font-poppins)]">
-                            Treasure at Tampines – Top Floor 2-Bedroom with
-                            814sqft in District 18 | $1,250,000 | George Peng
+                            {displayHero.title}
                         </h2>
                         <p className="text-sm text-secondary/50 mt-3 max-w-xl mx-auto leading-relaxed">
-                            The latest residential project in Singapore has successfully passed all regulatory checks, setting
-                            the stage for the most anticipated launch of the year. Singapore&apos;s most successful real estate
-                            project in Singapore has successfully passed all regulatory.
+                            {displayHero.excerpt}
                         </p>
                         <Link
-                            href={`/article/${featuredItem.slug}`}
+                            href={displayHero.slug ? `/all-home-tour-series#${displayHero.slug}` : "/all-home-tour-series"}
                             className="inline-flex items-center gap-2 mt-4 text-primary font-medium text-sm hover:text-primary-dark transition-colors group"
                         >
                             Read More
@@ -143,6 +162,14 @@ export default function AllHomeTourSeriesPage() {
             {/* All Home Tour Series Grid */}
             <section className="py-10 sm:py-14 lg:py-16">
                 <div className="container-custom">
+                    {loading && (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <Loader2 className="w-10 h-10 animate-spin text-[#195F60]" />
+                            <p className="text-secondary/70 text-sm">Loading home tours...</p>
+                        </div>
+                    )}
+                    {!loading && (
+                    <>
                     <ScrollReveal>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                             <h2 className="text-xl sm:text-2xl font-bold text-primary font-[var(--font-poppins)] shrink-0">
@@ -191,7 +218,7 @@ export default function AllHomeTourSeriesPage() {
                             {paginatedItems.map((item) => (
                                 <Link
                                     key={item.id}
-                                    href="#"
+                                    href={item.slug ? `/article/${item.slug}` : "#"}
                                     className="group block"
                                 >
                                     <motion.div
@@ -279,6 +306,8 @@ export default function AllHomeTourSeriesPage() {
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
+                    )}
+                    </>
                     )}
                 </div>
             </section>

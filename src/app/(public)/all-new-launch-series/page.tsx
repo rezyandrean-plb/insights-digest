@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Play, Search, ArrowRight } from "lucide-react";
-import { newLaunchSeries, articles } from "@/lib/data";
+import { ChevronLeft, ChevronRight, Play, Search, ArrowRight, Loader2 } from "lucide-react";
 import type { NewLaunchItem } from "@/lib/data";
 import ScrollReveal from "@/components/ScrollReveal";
 import Newsletter from "@/components/Newsletter";
@@ -14,21 +13,54 @@ type LaunchFilter = (typeof filterTabs)[number];
 
 const ITEMS_PER_PAGE = 9;
 
+const DEFAULT_HERO: NewLaunchItem = {
+    id: "",
+    slug: "",
+    title: "Singapore Property Market 2026: Private Home Prices Rise 3.3% and HDB Resale Prices Climb 9.6% Amid Strong Q4 Recovery",
+    excerpt: "Yesterday, a team of analysts departed from the Keppel Bay Tower, embarking on a fact-finding mission to Sentosa Cove. HDB is set to introduce sustainable living concepts in Punggol Northshore with new eco-friendly housing projects.",
+    image: "https://images.unsplash.com/photo-1524813686514-a57563d77965?w=1400&q=80",
+    category: "Most Viewed",
+    readTime: "5 mins read",
+};
+
 export default function AllNewLaunchSeriesPage() {
+    const [itemsList, setItemsList] = useState<NewLaunchItem[]>([]);
+    const [heroItem, setHeroItem] = useState<NewLaunchItem | null>(null);
+    const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<LaunchFilter>("Most Viewed");
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
 
-    const featuredArticle = articles[0];
+    const displayHero = heroItem ?? DEFAULT_HERO;
+
+    useEffect(() => {
+        setLoading(true);
+        Promise.all([
+            fetch("/api/new-launches").then((res) => {
+                if (!res.ok) throw new Error("Failed to fetch");
+                return res.json();
+            }),
+            fetch("/api/new-launches/hero").then((res) => res.json()),
+        ])
+            .then(([listData, heroData]: [NewLaunchItem[] | { error?: string }, NewLaunchItem | null]) => {
+                setItemsList(Array.isArray(listData) ? listData : []);
+                setHeroItem(heroData && heroData.id ? heroData : null);
+            })
+            .catch(() => {
+                setItemsList([]);
+                setHeroItem(null);
+            })
+            .finally(() => setLoading(false));
+    }, []);
 
     const filteredItems = useMemo(() => {
-        let result: NewLaunchItem[] = newLaunchSeries.filter((item) => item.category === activeFilter);
+        let result: NewLaunchItem[] = itemsList.filter((item) => item.category === activeFilter);
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             result = result.filter((item) => item.title.toLowerCase().includes(q));
         }
         return result;
-    }, [activeFilter, searchQuery]);
+    }, [itemsList, activeFilter, searchQuery]);
 
     const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
     const paginatedItems = filteredItems.slice(
@@ -82,12 +114,12 @@ export default function AllNewLaunchSeriesPage() {
                         </p>
                     </div>
 
-                    {/* Featured video thumbnail */}
+                    {/* Featured hero thumbnail */}
                     <div className="max-w-3xl mx-auto">
                         <div className="relative aspect-video rounded-2xl overflow-hidden group cursor-pointer">
                             <img
-                                src={featuredArticle.image}
-                                alt={featuredArticle.title}
+                                src={displayHero.image || "https://images.unsplash.com/photo-1524813686514-a57563d77965?w=1400&q=80"}
+                                alt={displayHero.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
@@ -99,16 +131,16 @@ export default function AllNewLaunchSeriesPage() {
                         </div>
                     </div>
 
-                    {/* Featured article info below video */}
+                    {/* Hero item info below video */}
                     <div className="max-w-3xl mx-auto mt-6 text-center">
                         <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-secondary leading-snug font-[var(--font-poppins)]">
-                            Singapore Property Market 2026: Private Home Prices Rise 3.3% and HDB Resale Prices Climb 9.6% Amid Strong Q4 Recovery
+                            {displayHero.title}
                         </h2>
                         <p className="text-sm text-secondary/50 mt-3 max-w-xl mx-auto leading-relaxed">
-                            Yesterday, a team of analysts departed from the Keppel Bay Tower, embarking on a fact-finding mission to Sentosa Cove. HDB is set to introduce sustainable living concepts in Punggol Northshore with new eco-friendly housing projects.
+                            {displayHero.excerpt}
                         </p>
                         <Link
-                            href={`/article/${featuredArticle.slug}`}
+                            href={displayHero.slug ? `/all-new-launch-series#${displayHero.slug}` : "/all-new-launch-series"}
                             className="inline-flex items-center gap-2 mt-4 text-primary font-medium text-sm hover:text-primary-dark transition-colors group"
                         >
                             Read More
@@ -158,7 +190,15 @@ export default function AllNewLaunchSeriesPage() {
                         </div>
                     </ScrollReveal>
 
-                    {/* Grid */}
+                    {loading && (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <Loader2 className="w-10 h-10 animate-spin text-[#195F60]" />
+                            <p className="text-secondary/70 text-sm">Loading new launch series...</p>
+                        </div>
+                    )}
+
+                    {!loading && (
+                    <>
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={`${activeFilter}-${currentPage}-${searchQuery}`}
@@ -261,6 +301,8 @@ export default function AllNewLaunchSeriesPage() {
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
+                    )}
+                    </>
                     )}
                 </div>
             </section>

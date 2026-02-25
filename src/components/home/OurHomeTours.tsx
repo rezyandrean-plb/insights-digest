@@ -7,6 +7,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 
 interface OurHomeToursProps {
     items: HomeTourItem[];
+    title?: string;
 }
 
 const sideItemTitles = [
@@ -21,7 +22,7 @@ const sideItemImages = [
     "/images/homepage/our-hometours-3.webp",
 ];
 
-export default function OurHomeTours({ items }: OurHomeToursProps) {
+export default function OurHomeTours({ items, title = "Our Home Tours" }: OurHomeToursProps) {
     const featured = items[0];
     const sideItems = items.slice(1, 4);
 
@@ -31,7 +32,7 @@ export default function OurHomeTours({ items }: OurHomeToursProps) {
                 <ScrollReveal>
                     <div className="flex items-center justify-between mb-8 sm:mb-10">
                         <h2 className="text-xl sm:text-2xl font-medium text-white font-[var(--font-poppins)]">
-                            Our Home Tours
+                            {title}
                         </h2>
                         <Link
                             href="/all-home-tour-series"
