@@ -25,7 +25,7 @@ export default function HomePage() {
   const [homeToursList, setHomeToursList] = useState<HomeTourItem[]>([]);
 
   useEffect(() => {
-    fetch("/api/homepage")
+    fetch("/api/homepage", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => setConfig(mergeWithDefault(data)))
       .catch(() => setConfig(DEFAULT_HOMEPAGE_CONFIG));
@@ -56,7 +56,14 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  const cfg = config ?? DEFAULT_HOMEPAGE_CONFIG;
+  // While config is loading, hide Our Methodology (and other admin-toggled sections) so we
+  // don't flash content the admin has hidden when navigating to the homepage from another page.
+  const cfg =
+    config ??
+    ({
+      ...DEFAULT_HOMEPAGE_CONFIG,
+      sections: { ...DEFAULT_HOMEPAGE_CONFIG.sections, ourMethodology: false },
+    } as HomepageConfig);
   const limits = cfg.limits;
   const titles = cfg.titles;
   const sections = cfg.sections;
