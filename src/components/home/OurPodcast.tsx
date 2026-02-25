@@ -133,23 +133,14 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
                                 <Link
                                     key={item.id}
                                     href="#"
-                                    className="flex items-center gap-4 sm:gap-5 group"
+                                    className="block group"
                                 >
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-sm sm:text-[15px] font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                                            {item.title}
-                                        </h4>
-                                        <p className="text-xs sm:text-sm text-black mt-1.5 leading-relaxed line-clamp-1">
-                                            {item.description}
-                                        </p>
-                                    </div>
-                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0">
-                                        <img
-                                            src={item.avatar}
-                                            alt=""
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
+                                    <h4 className="text-sm sm:text-[15px] font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                        {item.title}
+                                    </h4>
+                                    <p className="text-xs sm:text-sm text-black mt-1.5 leading-relaxed line-clamp-1">
+                                        {item.description}
+                                    </p>
                                 </Link>
                             ))}
                         </div>
