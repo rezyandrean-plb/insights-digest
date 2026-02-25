@@ -13,9 +13,9 @@ const categoryStyles: Record<string, string> = {
     "Market Analysis": "badge-market-analysis",
     "Real Estate News": "badge-real-estate-news",
     Guides: "badge-guides",
-    "Housing & Life": "badge-housing-life",
+    "Home & Life": "badge-home-life",
     "Project Reviews": "badge-project-reviews",
-    "Home Decor": "badge-home-decor",
+    "Home Radar": "badge-home-radar",
 };
 
 export default function CategoryBadge({

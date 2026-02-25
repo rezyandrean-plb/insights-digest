@@ -14,8 +14,8 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-    { href: "/all-articles", label: "Market Analysis", hasDropdown: false },
-    { href: "/all-articles", label: "Real Estate News", hasDropdown: false },
+    { href: "/market-analysis", label: "Market Analysis", hasDropdown: false },
+    { href: "/real-estate-news", label: "Real Estate News", hasDropdown: false },
     { href: "/guides", label: "Guides", hasDropdown: false },
     { href: "/home-and-life", label: "Home & Life", hasDropdown: false },
     { href: "/project-reviews", label: "Project Reviews", hasDropdown: false },

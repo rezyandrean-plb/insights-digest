@@ -30,9 +30,9 @@ const CATEGORIES: ArticleCategory[] = [
     "Market Analysis",
     "Real Estate News",
     "Guides",
-    "Housing & Life",
+    "Home & Life",
     "Project Reviews",
-    "Home Decor",
+    "Home Radar",
 ];
 
 const ITEMS_PER_PAGE = 10;
@@ -45,9 +45,9 @@ const categoryBadgeClass: Record<string, string> = {
     "Market Analysis": "bg-[#e8f0fe] text-[#1a56db]",
     "Real Estate News": "bg-[#fef3e6] text-[#d97706]",
     Guides: "bg-[#ecfdf5] text-[#059669]",
-    "Housing & Life": "bg-[#fdf2f8] text-[#db2777]",
+    "Home & Life": "bg-[#fdf2f8] text-[#db2777]",
     "Project Reviews": "bg-[#f0f4ff] text-[#4338ca]",
-    "Home Decor": "bg-[#fff7ed] text-[#c2410c]",
+    "Home Radar": "bg-[#fff7ed] text-[#c2410c]",
 };
 
 const emptyArticle: Omit<Article, "id"> = {
