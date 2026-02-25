@@ -79,7 +79,7 @@ export default function OurMethodology({ title = "Our Methodology", items }: Our
                                     <h3 className="text-base sm:text-lg font-bold text-secondary leading-snug font-[var(--font-poppins)]">
                                         {item.title}
                                     </h3>
-                                    <p className="text-sm text-secondary/60 mt-3 leading-relaxed">
+                                    <p className="text-sm text-black mt-3 leading-relaxed">
                                         {item.description}
                                     </p>
                                     <Link

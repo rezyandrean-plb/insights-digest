@@ -1,29 +1,125 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Phone } from "lucide-react";
+import { motion } from "framer-motion";
+import { Mail, Send, FileText, BarChart3, Rocket, Megaphone, ArrowRight } from "lucide-react";
 import Newsletter from "@/components/Newsletter";
+import ScrollReveal from "@/components/ScrollReveal";
 
-const helpOptions = ["Buying", "Selling", "Rental", "Consult with PLB"] as const;
+const enquiryTypes = ["Brand / Media Collaboration", "Private Property Advisory"] as const;
+const timelineOptions = ["Within 2 weeks", "Within 1 month", "1–3 months", "Exploratory"];
+const budgetOptions = ["Below $5,000", "$5,000 – $15,000", "$15,000 – $30,000", "$30,000+", "Prefer to discuss"];
+const stageOptions = ["Exploring", "Shortlisting options", "Ready to transact", "Reviewing portfolio strategy"];
+const propertyTypeOptions = ["HDB", "Condo", "Landed", "Mixed / Unsure"];
+
+const collaborateItems = [
+    { label: "Sponsored editorial features", icon: FileText },
+    { label: "Market deep dives", icon: BarChart3 },
+    { label: "New Launch explainers", icon: Rocket },
+    { label: "Multi-platform content campaigns", icon: Megaphone },
+];
+
+const TELEGRAM_CHANNEL_URL = "https://t.me/+fiknlY73pYwyNTI1";
+const CONTACT_EMAIL = "hello@insightsdigest.sg";
+
+function ContactSidebar() {
+    return (
+        <div className="lg:sticky lg:top-28 flex flex-col gap-5">
+            <div className="rounded-2xl bg-[#195F60] p-6 sm:p-8 text-white">
+                <h3 className="text-lg font-bold mb-2 font-[var(--font-poppins)]">
+                    Get in touch
+                </h3>
+                <p className="text-sm text-white/70 leading-relaxed mb-5">
+                    If you would like to explore a collaboration, reach us at:
+                </p>
+                <a
+                    href={`mailto:${CONTACT_EMAIL}`}
+                    className="inline-flex items-center gap-2.5 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm font-semibold hover:bg-white/20 transition-colors w-full"
+                >
+                    <Mail className="w-4 h-4 shrink-0" />
+                    {CONTACT_EMAIL}
+                </a>
+                <div className="mt-6 pt-5 border-t border-white/15">
+                    <p className="text-base font-semibold font-[var(--font-poppins)]">
+                        Build something worth reading.
+                    </p>
+                </div>
+            </div>
+
+            <a
+                href={TELEGRAM_CHANNEL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-2xl bg-white border border-border/50 p-5 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-[#195F60]/30 transition-all duration-200"
+            >
+                <div className="w-10 h-10 rounded-xl bg-[#195F60]/10 flex items-center justify-center shrink-0 group-hover:bg-[#195F60]/20 transition-colors">
+                    <Send className="w-4.5 h-4.5 text-[#195F60]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-secondary block">Telegram</span>
+                    <span className="text-xs text-secondary/60">Join our channel</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-secondary/30 group-hover:text-[#195F60] group-hover:translate-x-0.5 transition-all" />
+            </a>
+        </div>
+    );
+}
+
+function RadioGroup({
+    name,
+    options,
+    value,
+    onChange,
+}: {
+    name: string;
+    options: string[];
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+    return (
+        <div className="flex flex-wrap gap-2">
+            {options.map((opt) => (
+                <label
+                    key={opt}
+                    className={`cursor-pointer rounded-lg border px-3.5 py-2 text-sm transition-all duration-150 ${
+                        value === opt
+                            ? "border-[#195F60] bg-[#195F60]/5 text-[#195F60] font-medium"
+                            : "border-secondary/15 text-secondary/70 hover:border-secondary/30"
+                    }`}
+                >
+                    <input
+                        type="radio"
+                        name={name}
+                        value={opt}
+                        checked={value === opt}
+                        onChange={onChange}
+                        className="sr-only"
+                    />
+                    {opt}
+                </label>
+            ))}
+        </div>
+    );
+}
 
 export default function ContactPage() {
+    const [enquiryAbout, setEnquiryAbout] = useState<string>("");
     const [formData, setFormData] = useState({
-        name: "",
-        mobile: "",
+        fullName: "",
         email: "",
-        message: "",
+        contactNumber: "",
+        company: "",
+        lookingToAchieve: "",
+        projectTimeline: "",
+        estimatedBudget: "",
+        stage: "",
+        propertyType: "",
+        describeSituation: "",
     });
-    const [selectedHelp, setSelectedHelp] = useState<string[]>([]);
 
-    const toggleHelp = (option: string) => {
-        setSelectedHelp((prev) =>
-            prev.includes(option)
-                ? prev.filter((o) => o !== option)
-                : [...prev, option]
-        );
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
         setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
@@ -31,182 +127,307 @@ export default function ContactPage() {
         e.preventDefault();
     };
 
+    const isBrand = enquiryAbout === "Brand / Media Collaboration";
+    const isPrivate = enquiryAbout === "Private Property Advisory";
+
     return (
         <>
-            <section className="py-10 sm:py-14 lg:py-16">
+            {/* Hero */}
+            <section className="relative bg-[#195F60] py-16 sm:py-20 lg:py-28 overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.06)_0%,transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.04)_0%,transparent_50%)]" />
+                <div className="container-custom relative">
+                    <ScrollReveal>
+                        <span className="inline-block text-sm font-medium text-white/50 tracking-wide uppercase mb-4">
+                            Collaboration
+                        </span>
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-[1.1] tracking-tight font-[var(--font-poppins)] max-w-xl">
+                            Work With Us
+                        </h1>
+                        <p className="text-lg sm:text-xl text-white/70 mt-5 max-w-lg leading-relaxed">
+                            We create real estate content people trust.
+                        </p>
+                    </ScrollReveal>
+                </div>
+            </section>
+
+            {/* About + Collaborate */}
+            <section className="py-14 sm:py-20 lg:py-24">
                 <div className="container-custom">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
-                        {/* Left — Contact Form */}
-                        <div className="bg-white rounded-xl border border-secondary/10 p-6 sm:p-8">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-secondary font-[var(--font-poppins)]">
-                                Ask us anything!
-                            </h1>
-                            <p className="text-sm text-secondary/60 mt-2 leading-relaxed">
-                                We&apos;d love to assist you in your property journey. Send
-                                us your details and we&apos;ll be in touch with you soon!
+                    <div className="max-w-2xl mx-auto lg:mx-0 lg:max-w-none lg:grid lg:grid-cols-[1fr_1fr] lg:gap-16 xl:gap-24 items-start">
+                        <ScrollReveal direction="left">
+                            <span className="inline-block text-xs font-semibold text-[#195F60] tracking-widest uppercase mb-3">
+                                About Us
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-secondary leading-snug font-[var(--font-poppins)]">
+                                Independent. Data-driven. Editorial-first.
+                            </h2>
+                            <p className="text-base sm:text-lg text-secondary/70 mt-4 leading-relaxed">
+                                Insights Digest is an independent editorial platform focused on clear, structured,
+                                and data-driven property analysis. We partner with brands that value credibility
+                                over noise. If you are launching, repositioning, or looking to communicate with
+                                clarity — let&apos;s talk.
                             </p>
+                        </ScrollReveal>
 
-                            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        placeholder="Name*"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-secondary/20 text-sm text-secondary placeholder:text-secondary/40 outline-none focus:border-primary/50 transition-colors"
-                                        required
-                                    />
-                                    <input
-                                        type="tel"
-                                        name="mobile"
-                                        placeholder="Mobile Number*"
-                                        value={formData.mobile}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-secondary/20 text-sm text-secondary placeholder:text-secondary/40 outline-none focus:border-primary/50 transition-colors"
-                                        required
-                                    />
-                                </div>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    placeholder="Email*"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-secondary/20 text-sm text-secondary placeholder:text-secondary/40 outline-none focus:border-primary/50 transition-colors"
-                                    required
-                                />
-                                <textarea
-                                    name="message"
-                                    placeholder="Message*"
-                                    rows={4}
-                                    value={formData.message}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-secondary/20 text-sm text-secondary placeholder:text-secondary/40 outline-none focus:border-primary/50 transition-colors resize-none"
-                                    required
-                                />
+                        <ScrollReveal direction="right">
+                            <h3 className="text-xl sm:text-2xl font-bold text-secondary mb-5 font-[var(--font-poppins)] mt-10 lg:mt-0">
+                                What We Collaborate On
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {collaborateItems.map((item, i) => (
+                                    <motion.div
+                                        key={item.label}
+                                        initial={{ opacity: 0, y: 16 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: i * 0.1, duration: 0.4 }}
+                                        className="group rounded-xl bg-white border border-border/50 p-4 shadow-sm hover:shadow-md hover:border-[#195F60]/25 transition-all duration-200"
+                                    >
+                                        <div className="flex items-start gap-3.5">
+                                            <div className="w-9 h-9 rounded-lg bg-[#195F60]/10 flex items-center justify-center shrink-0 group-hover:bg-[#195F60]/15 transition-colors">
+                                                <item.icon className="w-4 h-4 text-[#195F60]" />
+                                            </div>
+                                            <span className="text-sm font-medium text-secondary leading-snug pt-1.5">
+                                                {item.label}
+                                            </span>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </ScrollReveal>
+                    </div>
+                </div>
+            </section>
 
-                                <div>
-                                    <p className="text-sm font-medium text-secondary mb-3">
-                                        What can we help you with?*
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {helpOptions.map((option) => (
-                                            <label
-                                                key={option}
-                                                className="flex items-center gap-2.5 cursor-pointer group"
-                                            >
-                                                <div
-                                                    className={`w-4.5 h-4.5 rounded border-2 flex items-center justify-center transition-colors ${
-                                                        selectedHelp.includes(option)
-                                                            ? "bg-primary border-primary"
-                                                            : "border-secondary/30 group-hover:border-primary/50"
+            {/* Divider */}
+            <div className="container-custom"><div className="border-t border-border/40" /></div>
+
+            {/* Form + Sidebar */}
+            <section className="py-14 sm:py-20 lg:py-24">
+                <div className="container-custom">
+                    <ScrollReveal>
+                        <div className="text-center max-w-lg mx-auto mb-12 sm:mb-16">
+                            <span className="inline-block text-xs font-semibold text-[#195F60] tracking-widest uppercase mb-3">
+                                Contact
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-secondary font-[var(--font-poppins)]">
+                                Start A Conversation
+                            </h2>
+                            <p className="text-sm sm:text-base text-secondary/60 mt-3">
+                                Tell us a little about what you&apos;re looking for.
+                            </p>
+                        </div>
+                    </ScrollReveal>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 lg:gap-12 items-start">
+                        {/* Left — Enquiry Form */}
+                        <ScrollReveal direction="left">
+                            <div className="bg-white rounded-2xl border border-border/50 shadow-lg shadow-secondary/5 p-6 sm:p-8 lg:p-10">
+                                <h3 className="text-lg font-bold text-secondary mb-1 font-[var(--font-poppins)]">
+                                    Enquiry Form
+                                </h3>
+                                <p className="text-sm text-secondary/50 mb-8">
+                                    All fields marked with * are required.
+                                </p>
+
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <div>
+                                        <p className="text-sm font-semibold text-secondary mb-3">
+                                            I am enquiring about: *
+                                        </p>
+                                        <div className="flex gap-3">
+                                            {enquiryTypes.map((option) => (
+                                                <label
+                                                    key={option}
+                                                    className={`flex-1 cursor-pointer rounded-xl border-2 p-4 text-center text-sm font-medium transition-all duration-150 ${
+                                                        enquiryAbout === option
+                                                            ? "border-[#195F60] bg-[#195F60]/5 text-[#195F60]"
+                                                            : "border-secondary/10 text-secondary/60 hover:border-secondary/25"
                                                     }`}
-                                                    onClick={() => toggleHelp(option)}
                                                 >
-                                                    {selectedHelp.includes(option) && (
-                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <span className="text-sm text-secondary/70">{option}</span>
+                                                    <input
+                                                        type="radio"
+                                                        name="enquiryAbout"
+                                                        value={option}
+                                                        checked={enquiryAbout === option}
+                                                        onChange={(e) => setEnquiryAbout(e.target.value)}
+                                                        className="sr-only"
+                                                    />
+                                                    {option}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-secondary mb-1.5">
+                                                Full Name *
                                             </label>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    className="w-full bg-[#195F60] text-white font-medium text-sm py-3 rounded-full hover:bg-[#195F60]/90 transition-colors"
-                                >
-                                    Submit
-                                </button>
-                            </form>
-
-                            <p className="text-xs text-secondary/40 mt-4 leading-relaxed">
-                                Upon registering, you agree to receive future marketing
-                                materials from PropertyLimBrothers. Your personal
-                                information will be used in accordance with our privacy
-                                policy.
-                            </p>
-                        </div>
-
-                        {/* Right — Office Info + Map */}
-                        <div className="flex flex-col gap-6">
-                            {/* Office Addresses + Hotlines */}
-                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-6">
-                                <div className="space-y-5">
-                                    {/* PLB Apex */}
-                                    <div className="flex gap-3">
-                                        <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                            <input
+                                                type="text"
+                                                name="fullName"
+                                                value={formData.fullName}
+                                                onChange={handleChange}
+                                                placeholder="John Doe"
+                                                className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all"
+                                                required
+                                            />
+                                        </div>
                                         <div>
-                                            <h3 className="text-sm font-bold text-secondary">PLB Apex</h3>
-                                            <p className="text-xs text-secondary/60 mt-1 leading-relaxed">
-                                                HQ Media Production Office<br />
-                                                62 Ubi Road 1, Oxley BizHub 2,<br />
-                                                #11-15/18, Singapore 408734
-                                            </p>
+                                            <label className="block text-sm font-medium text-secondary mb-1.5">
+                                                Email Address *
+                                            </label>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                placeholder="john@example.com"
+                                                className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all"
+                                                required
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* PLB Ascent */}
-                                    <div className="flex gap-3">
-                                        <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                         <div>
-                                            <h3 className="text-sm font-bold text-secondary">PLB Ascent</h3>
-                                            <p className="text-xs text-secondary/60 mt-1 leading-relaxed">
-                                                Studio & Inside Sales Team Office<br />
-                                                62 Ubi Road 1, Oxley BizHub 2,<br />
-                                                #01-35, Singapore 408734
-                                            </p>
+                                            <label className="block text-sm font-medium text-secondary mb-1.5">
+                                                Contact Number <span className="text-secondary/40 font-normal">(Optional)</span>
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                name="contactNumber"
+                                                value={formData.contactNumber}
+                                                onChange={handleChange}
+                                                placeholder="+65 9123 4567"
+                                                className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-secondary mb-1.5">
+                                                Company <span className="text-secondary/40 font-normal">(if applicable)</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="company"
+                                                value={formData.company}
+                                                onChange={handleChange}
+                                                placeholder="Company name"
+                                                className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all"
+                                            />
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Hotlines */}
-                                <div className="space-y-5">
-                                    <div>
-                                        <h3 className="text-sm font-bold text-secondary">Sales Enquiries Hotline</h3>
-                                        <div className="flex items-center gap-2 mt-1.5">
-                                            <Phone className="w-4 h-4 text-primary" />
-                                            <a href="tel:+6562326719" className="text-sm text-secondary/70 hover:text-primary transition-colors">
-                                                +65 6232 6719
-                                            </a>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <Phone className="w-4 h-4 text-primary" />
-                                            <a href="tel:+6597457388" className="text-sm text-secondary/70 hover:text-primary transition-colors">
-                                                +65 9745 7388
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold text-secondary">Career Hotline</h3>
-                                        <div className="flex items-center gap-2 mt-1.5">
-                                            <Phone className="w-4 h-4 text-primary" />
-                                            <a href="tel:+6590993788" className="text-sm text-secondary/70 hover:text-primary transition-colors">
-                                                +65 9099 3788
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                    {/* Brand / Media Collaboration fields */}
+                                    {isBrand && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: "auto" }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="space-y-6 pt-2 border-t border-dashed border-secondary/10"
+                                        >
+                                            <div className="pt-4">
+                                                <label className="block text-sm font-medium text-secondary mb-1.5">
+                                                    What are you looking to achieve?
+                                                </label>
+                                                <textarea
+                                                    name="lookingToAchieve"
+                                                    value={formData.lookingToAchieve}
+                                                    onChange={handleChange}
+                                                    placeholder="Describe your goals..."
+                                                    rows={3}
+                                                    className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all resize-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-secondary mb-3">
+                                                    Project Timeline
+                                                </p>
+                                                <RadioGroup
+                                                    name="projectTimeline"
+                                                    options={timelineOptions}
+                                                    value={formData.projectTimeline}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-secondary mb-3">
+                                                    Estimated Budget Range
+                                                </p>
+                                                <RadioGroup
+                                                    name="estimatedBudget"
+                                                    options={budgetOptions}
+                                                    value={formData.estimatedBudget}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
 
-                            {/* Map */}
-                            <div className="rounded-lg overflow-hidden border border-secondary/10 flex-1 min-h-[280px]">
-                                <iframe
-                                    src="https://maps.google.com/maps?q=Oxley+BizHub+2,+62+Ubi+Rd+1,+Singapore+408734&t=&z=16&ie=UTF8&iwloc=B&output=embed"
-                                    width="100%"
-                                    height="100%"
-                                    style={{ border: 0 }}
-                                    allowFullScreen
-                                    loading="lazy"
-                                    referrerPolicy="no-referrer-when-downgrade"
-                                    title="PLB Office Location — Oxley BizHub 2"
-                                />
+                                    {/* Private Property Advisory fields */}
+                                    {isPrivate && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: "auto" }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="space-y-6 pt-2 border-t border-dashed border-secondary/10"
+                                        >
+                                            <div className="pt-4">
+                                                <p className="text-sm font-medium text-secondary mb-3">
+                                                    What stage are you at?
+                                                </p>
+                                                <RadioGroup
+                                                    name="stage"
+                                                    options={stageOptions}
+                                                    value={formData.stage}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-secondary mb-3">
+                                                    Property Type of Interest
+                                                </p>
+                                                <RadioGroup
+                                                    name="propertyType"
+                                                    options={propertyTypeOptions}
+                                                    value={formData.propertyType}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-secondary mb-1.5">
+                                                    Briefly describe your situation
+                                                </label>
+                                                <textarea
+                                                    name="describeSituation"
+                                                    value={formData.describeSituation}
+                                                    onChange={handleChange}
+                                                    placeholder="Tell us more..."
+                                                    rows={3}
+                                                    className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all resize-none"
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-[#195F60] text-white font-semibold text-sm py-3.5 rounded-xl hover:bg-[#164E4F] active:scale-[0.99] transition-all duration-150 shadow-sm shadow-[#195F60]/20"
+                                    >
+                                        Submit Enquiry
+                                    </button>
+                                </form>
                             </div>
-                        </div>
+                        </ScrollReveal>
+
+                        {/* Right — Sidebar */}
+                        <ScrollReveal direction="right">
+                            <ContactSidebar />
+                        </ScrollReveal>
                     </div>
                 </div>
             </section>

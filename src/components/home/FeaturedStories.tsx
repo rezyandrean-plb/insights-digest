@@ -126,10 +126,10 @@ export default function FeaturedStories({ articles, title = "Featured Stories" }
                                     <h3 className="text-base sm:text-lg font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                         {article.title}
                                     </h3>
-                                    <p className="text-sm text-secondary/60 mt-2 leading-relaxed line-clamp-2">
+                                    <p className="text-sm text-black mt-2 leading-relaxed line-clamp-2">
                                         {article.excerpt}
                                     </p>
-                                    <div className="flex items-center text-xs text-secondary/50 mt-3">
+                                    <div className="flex items-center text-xs text-black mt-3">
                                         <span>{article.category}</span>
                                         <span className="mx-2">|</span>
                                         <span>{article.readTime}</span>

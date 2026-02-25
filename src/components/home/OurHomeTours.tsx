@@ -22,12 +22,12 @@ const sideItemImages = [
     "/images/homepage/our-hometours-3.webp",
 ];
 
-export default function OurHomeTours({ items, title = "Our Home Tours" }: OurHomeToursProps) {
+export default function OurHomeTours({ items, title = "Watch" }: OurHomeToursProps) {
     const featured = items[0];
     const sideItems = items.slice(1, 4);
 
     return (
-        <section className="bg-secondary py-12 sm:py-16 lg:py-20">
+        <section className="bg-[#195F60] py-12 sm:py-16 lg:py-20">
             <div className="container-custom">
                 <ScrollReveal>
                     <div className="flex items-center justify-between mb-8 sm:mb-10">
@@ -36,7 +36,7 @@ export default function OurHomeTours({ items, title = "Our Home Tours" }: OurHom
                         </h2>
                         <Link
                             href="/all-home-tour-series"
-                            className="text-xs sm:text-sm text-white/50 hover:text-primary transition-colors"
+                            className="text-xs sm:text-sm text-white hover:text-primary transition-colors"
                         >
                             see all &gt;
                         </Link>
@@ -64,12 +64,12 @@ export default function OurHomeTours({ items, title = "Our Home Tours" }: OurHom
                         <h3 className="text-[28px] font-medium text-white leading-[125%] mt-5 font-[var(--font-poppins)]">
                             Treasure at Tampines - Top Floor 2-Bedroom with 614sqft in District 18 | $1,250,000 | George Peng
                         </h3>
-                        <p className="text-[14px] font-normal text-white/60 leading-[150%] mt-3 font-[var(--font-poppins)]">
+                        <p className="text-[14px] font-normal text-white/90 leading-[150%] mt-3 font-[var(--font-poppins)]">
                             The latest residential project in Singapore has successfully passed all regulatory checks, setting the stage for The latest residential project in Singapore has successfully The latest residential project in Singapore has successfully passed all regulatory
                         </p>
                         <Link
                             href={`#`}
-                            className="inline-flex items-center gap-2 mt-4 text-white/80 font-medium text-sm hover:text-primary transition-colors group/link"
+                            className="inline-flex items-center gap-2 mt-4 text-white font-medium text-sm hover:text-primary transition-colors group/link"
                         >
                             Read More
                             <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
@@ -104,7 +104,7 @@ export default function OurHomeTours({ items, title = "Our Home Tours" }: OurHom
                                     </h4>
                                     <Link
                                         href={`#`}
-                                        className="inline-flex items-center gap-2 mt-3 text-white/60 font-medium text-xs sm:text-sm hover:text-primary transition-colors group/link"
+                                        className="inline-flex items-center gap-2 mt-3 text-white/90 font-medium text-xs sm:text-sm hover:text-primary transition-colors group/link"
                                     >
                                         Read More
                                         <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />

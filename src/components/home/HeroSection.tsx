@@ -11,7 +11,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ article }: HeroSectionProps) {
     return (
-        <section className="py-8 sm:py-10 lg:py-14 bg-[#CBEAED]">
+        <section className="py-8 sm:py-10 lg:py-14 bg-[#195F60]">
             <div className="container-custom">
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
                     {/* Left: Text content */}
@@ -21,24 +21,24 @@ export default function HeroSection({ article }: HeroSectionProps) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.7, delay: 0.1 }}
                     >
-                        <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-bold text-secondary leading-[1.1] tracking-tight">
+                        <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-bold text-white leading-[1.1] tracking-tight">
                             {article.title}
                         </h1>
 
-                        <p className="text-sm sm:text-base text-secondary/70 mt-5 leading-relaxed max-w-md">
+                        <p className="text-sm sm:text-base text-white/90 mt-5 leading-relaxed max-w-md">
                             {article.excerpt}
                         </p>
 
                         <Link
                             href={`/article/${article.slug}`}
-                            className="inline-flex items-center gap-2 mt-6 text-secondary font-medium text-sm hover:text-primary transition-colors group"
+                            className="inline-flex items-center gap-2 mt-6 text-white font-medium text-sm hover:text-white/90 transition-colors group"
                         >
                             Read More
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
 
                         {/* Meta line with pipe separators */}
-                        <div className="flex items-center gap-0 mt-6 text-xs sm:text-sm text-secondary/50 flex-wrap">
+                        <div className="flex items-center gap-0 mt-6 text-xs sm:text-sm text-white/60 flex-wrap">
                             <span>Singapore&apos;s Coastal Property Frontier</span>
                             <span className="mx-2 sm:mx-3">|</span>
                             <span>{article.author}</span>
