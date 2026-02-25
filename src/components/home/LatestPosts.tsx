@@ -27,7 +27,7 @@ export default function LatestPosts({ articles, title = "Latest Post" }: LatestP
                         <ScrollReveal key={article.id} delay={i * 0.1}>
                             <Link href={`/article/${article.slug}`} className="group block">
                                 {/* Author & date */}
-                                <div className="flex items-center text-xs text-secondary/50 mb-2">
+                                <div className="flex items-center text-xs text-black mb-2">
                                     <span>{article.author}</span>
                                     <span className="mx-2">|</span>
                                     <span>{article.date}</span>
@@ -39,7 +39,7 @@ export default function LatestPosts({ articles, title = "Latest Post" }: LatestP
                                 </h3>
 
                                 {/* Category & read time */}
-                                <div className="flex items-center text-xs text-secondary/40 mt-2">
+                                <div className="flex items-center text-xs text-black mt-2">
                                     <span>{article.category}</span>
                                     <span className="mx-2">|</span>
                                     <span>{article.readTime}</span>

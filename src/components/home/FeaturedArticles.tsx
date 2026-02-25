@@ -84,10 +84,10 @@ export default function FeaturedArticles({ articles, title = "Featured Articles"
                                     <h3 className="text-base font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors font-[var(--font-poppins)]">
                                         {article.title}
                                     </h3>
-                                    <p className="text-sm text-secondary/50 mt-1.5 leading-relaxed line-clamp-2">
+                                    <p className="text-sm text-black mt-1.5 leading-relaxed line-clamp-2">
                                         {article.excerpt}
                                     </p>
-                                    <div className="flex items-center text-xs text-secondary/50 mt-2.5">
+                                    <div className="flex items-center text-xs text-black mt-2.5">
                                         <span className="text-primary font-medium">{article.category}</span>
                                         <span className="mx-2 text-secondary/30">|</span>
                                         <span>{article.readTime}</span>
@@ -100,7 +100,7 @@ export default function FeaturedArticles({ articles, title = "Featured Articles"
 
                 {filteredArticles.length === 0 && (
                     <div className="text-center py-20">
-                        <p className="text-secondary/50 text-lg">No articles found for this category.</p>
+                        <p className="text-black text-lg">No articles found for this category.</p>
                     </div>
                 )}
             </div>

@@ -11,7 +11,7 @@ export default function Newsletter() {
                             Never miss an update.<br />
                             Get our newsletter.
                         </h2>
-                        <p className="text-sm sm:text-base text-white/70 mt-4 max-w-md leading-relaxed">
+                        <p className="text-sm sm:text-base text-white/90 mt-4 max-w-md leading-relaxed">
                             Sign up for our Weekly Newsletter to your email. Receive the latest news and updates regarding the Singapore property market.
                         </p>
                         <div className="flex items-center gap-3 mt-6 max-w-md">
@@ -28,16 +28,11 @@ export default function Newsletter() {
 
                     {/* Right image */}
                     <div className="hidden lg:flex w-2/5 items-center justify-center">
-                        <div className="relative w-[260px] h-[260px]">
-                            <div className="absolute inset-0 rounded-full border-2 border-[#a3e635] scale-110" />
-                            <div className="w-full h-full rounded-full overflow-hidden">
-                                <img
-                                    src="/images/homepage/newsletter.webp"
-                                    alt="Team celebrating"
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                        </div>
+                        <img
+                            src="/images/homepage/newsletter-logo.webp"
+                            alt="Newsletter"
+                            className="w-full h-auto object-contain"
+                        />
                     </div>
                 </div>
             </div>

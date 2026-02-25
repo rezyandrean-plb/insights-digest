@@ -76,7 +76,7 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
             <ScrollReveal>
                 <div className="flex flex-col-reverse lg:flex-row min-h-[280px] sm:min-h-[320px] overflow-hidden">
                     {/* Left: dark teal content area */}
-                    <div className="flex-1 bg-secondary flex flex-col sm:flex-row gap-0 py-8 sm:py-10">
+                    <div className="flex-1 bg-[#195F60] flex flex-col sm:flex-row gap-0 py-8 sm:py-10">
                         <div className="sm:w-[35%] flex flex-col justify-center ml-0 pl-6 pr-6 sm:ml-6 sm:pl-8 sm:pr-8 lg:ml-[calc((100vw-1280px)/2+2rem)] border-l border-r border-white/15">
                             <span className="text-primary text-xs sm:text-sm font-medium tracking-wide">
                                 {sectionLabel}
@@ -86,7 +86,7 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
                             </h3>
                         </div>
                         <div className="sm:w-[65%] flex flex-col justify-center px-6 sm:px-8 lg:px-10 mt-6 sm:mt-0 border-r border-white/15">
-                            <p className="text-[14px] font-normal text-white/70 leading-[22px] font-[var(--font-poppins)] max-w-none sm:max-w-[280px]">
+                            <p className="text-[14px] font-normal text-white/90 leading-[22px] font-[var(--font-poppins)] max-w-none sm:max-w-[280px]">
                                 {podcastData.description}
                             </p>
                         </div>
@@ -122,7 +122,7 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
                             </h3>
                             <Link
                                 href="#"
-                                className="text-xs sm:text-sm text-secondary/50 hover:text-primary transition-colors"
+                                className="text-xs sm:text-sm text-black hover:text-primary transition-colors"
                             >
                                 see all &gt;
                             </Link>
@@ -139,7 +139,7 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
                                         <h4 className="text-sm sm:text-[15px] font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                             {item.title}
                                         </h4>
-                                        <p className="text-xs sm:text-sm text-secondary/50 mt-1.5 leading-relaxed line-clamp-1">
+                                        <p className="text-xs sm:text-sm text-black mt-1.5 leading-relaxed line-clamp-1">
                                             {item.description}
                                         </p>
                                     </div>

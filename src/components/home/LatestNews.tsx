@@ -71,7 +71,7 @@ function VideoColumn({
                                 className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-300"
                             />
                         </div>
-                        <p className="text-xs sm:text-sm text-secondary/80 leading-snug line-clamp-2 group-hover/thumb:text-primary transition-colors">
+                        <p className="text-xs sm:text-sm text-black leading-snug line-clamp-2 group-hover/thumb:text-primary transition-colors">
                             {item.title}
                         </p>
                     </Link>
@@ -124,7 +124,7 @@ export default function LatestNews({ article, reels, newLaunchItems, webinarItem
                         <h3 className="text-[42px] font-bold text-secondary leading-[125%] font-[var(--font-poppins)]">
                             {article.title}
                         </h3>
-                        <p className="text-sm sm:text-base text-secondary/60 mt-5 leading-relaxed">
+                        <p className="text-sm sm:text-base text-black mt-5 leading-relaxed">
                             {article.excerpt}
                         </p>
 
@@ -139,10 +139,10 @@ export default function LatestNews({ article, reels, newLaunchItems, webinarItem
                         {/* Meta: category | author | read time */}
                         <div className="flex items-center flex-wrap gap-0 mt-6 text-xs sm:text-sm">
                             <span className="text-primary font-medium">Singapore Real Estate</span>
-                            <span className="mx-2 text-secondary/40">|</span>
+                            <span className="mx-2 text-black/60">|</span>
                             <span className="text-primary font-medium">{article.author}</span>
-                            <span className="mx-2 text-secondary/40">|</span>
-                            <span className="text-secondary/50">{article.readTime}</span>
+                            <span className="mx-2 text-black/60">|</span>
+                            <span className="text-black">{article.readTime}</span>
                         </div>
                     </ScrollReveal>
                 </div>
