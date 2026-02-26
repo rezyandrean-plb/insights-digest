@@ -78,3 +78,13 @@ export const homeTourSeries = pgTable("home_tour_series", {
         .defaultNow()
         .$onUpdate(() => new Date()),
 });
+
+export const adminUsers = pgTable("admin_users", {
+    id: serial("id").primaryKey(),
+    email: text("email").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+        .defaultNow()
+        .$onUpdate(() => new Date()),
+});
