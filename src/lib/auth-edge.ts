@@ -37,10 +37,13 @@ async function verifyToken(token: string): Promise<SessionPayload | null> {
 
         const key = await getHmacKey();
         const sigBytes = b64urlDecode(sig);
+        // Copy into ArrayBuffer-backed view so it's a valid BufferSource for subtle.verify
+        const sigBuffer = new Uint8Array(sigBytes.length);
+        sigBuffer.set(sigBytes);
         const valid = await crypto.subtle.verify(
             "HMAC",
             key,
-            sigBytes,
+            sigBuffer,
             new TextEncoder().encode(encoded)
         );
         if (!valid) return null;
