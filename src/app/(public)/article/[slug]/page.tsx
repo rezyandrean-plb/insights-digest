@@ -54,7 +54,7 @@ export default function ArticlePage() {
     }
 
     return (
-        <article className="pb-16 bg-white">
+        <article className="pb-16 bg-[#F1EDEB]">
             <div className="container-custom pt-8 lg:pt-12">
                 {/* Title */}
                 <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-black leading-[125%] font-[var(--font-poppins)] max-w-2xl">

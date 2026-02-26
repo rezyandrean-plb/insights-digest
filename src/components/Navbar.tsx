@@ -22,7 +22,7 @@ const navLinks: NavLink[] = [
     { href: "/home-radar", label: "Home Radar", hasDropdown: false },
     {
         href: "/all-reels",
-        label: "Watch",
+        label: "Watch & Listen",
         hasDropdown: true,
         submenu: [
             { href: "/all-reels", label: "Reels" },

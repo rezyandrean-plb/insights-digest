@@ -98,6 +98,7 @@ export default function ContactPage() {
         email: "",
         contactNumber: "",
         company: "",
+        inquiryContext: "",
         lookingToAchieve: "",
         projectTimeline: "",
         estimatedBudget: "",
@@ -328,6 +329,19 @@ export default function ContactPage() {
                                                 onChange={handleChange}
                                                 placeholder="Company name"
                                                 className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all"
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-sm font-medium text-secondary mb-1.5">
+                                                Share the context behind your inquiry so we can assess the best next steps.
+                                            </label>
+                                            <textarea
+                                                name="inquiryContext"
+                                                value={formData.inquiryContext}
+                                                onChange={handleChange}
+                                                placeholder="Share the context behind your inquiry..."
+                                                rows={4}
+                                                className="w-full px-4 py-3 rounded-xl border border-secondary/15 text-sm text-secondary placeholder:text-secondary/35 outline-none focus:border-[#195F60] focus:ring-2 focus:ring-[#195F60]/10 transition-all resize-none"
                                             />
                                         </div>
                                     </div>
