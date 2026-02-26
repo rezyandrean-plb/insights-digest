@@ -20,6 +20,7 @@ const SECTION_KEYS = [
     { key: "latestNews", label: "Latest News" },
     { key: "ourMethodology", label: "Our Methodology" },
     { key: "ourPodcast", label: "Our Podcast" },
+    { key: "listen", label: "Listen (Nuggets On The Go)" },
     { key: "ourHomeTours", label: "Our Home Tours" },
     { key: "featuredArticles", label: "Featured Articles" },
     { key: "newsletter", label: "Newsletter" },
@@ -30,6 +31,7 @@ const TITLE_KEYS = [
     { key: "featuredStories", label: "Featured Stories heading" },
     { key: "ourMethodology", label: "Our Methodology heading" },
     { key: "ourPodcast", label: "Our Podcast heading" },
+    { key: "listen", label: "Listen (Nuggets on the go) heading" },
     { key: "ourHomeTours", label: "Our Home Tours heading" },
     { key: "featuredArticles", label: "Featured Articles heading" },
 ] as const;
@@ -96,6 +98,8 @@ export default function AdminHomepagePage() {
     const [nuggetsDialogOpen, setNuggetsDialogOpen] = useState(false);
     const [editingNuggetIndex, setEditingNuggetIndex] = useState<number | null>(null);
     const [nuggetForm, setNuggetForm] = useState<HomepageNugget>(emptyNugget("1"));
+    const [editingTitleKey, setEditingTitleKey] = useState<keyof HomepageConfig["titles"] | null>(null);
+    const [titleDialogValue, setTitleDialogValue] = useState("");
 
     const fetchConfig = useCallback(async () => {
         try {
@@ -125,6 +129,26 @@ export default function AdminHomepagePage() {
             ...prev,
             titles: { ...prev.titles, [key]: value },
         }));
+    };
+
+    const openTitleDialog = (key: keyof HomepageConfig["titles"]) => {
+        setEditingTitleKey(key);
+        setTitleDialogValue(config.titles[key]);
+    };
+
+    const closeTitleDialog = () => {
+        setEditingTitleKey(null);
+        setTitleDialogValue("");
+    };
+
+    const saveTitleFromDialog = () => {
+        if (editingTitleKey !== null) {
+            const nextTitles = { ...config.titles, [editingTitleKey]: titleDialogValue };
+            const nextConfig = { ...config, titles: nextTitles };
+            updateTitles(editingTitleKey, titleDialogValue);
+            closeTitleDialog();
+            handleSave(nextConfig);
+        }
     };
 
     const updateLimits = (key: keyof HomepageConfig["limits"], value: number) => {
@@ -225,23 +249,27 @@ export default function AdminHomepagePage() {
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (configOverride?: HomepageConfig) => {
         setSaving(true);
         setError(null);
         setSaved(false);
+        const payload = configOverride ?? config;
         try {
             const res = await fetch("/api/homepage", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(config),
+                body: JSON.stringify(payload),
             });
-            if (!res.ok) throw new Error("Failed to save");
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error((errBody as { error?: string }).error ?? "Failed to save");
+            }
             const data = await res.json();
             setConfig(mergeWithDefault(data));
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
-        } catch {
-            setError("Failed to save. Please try again.");
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to save. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -272,19 +300,24 @@ export default function AdminHomepagePage() {
                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                         Homepage Content
                     </h1>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
-                    >
-                        {saving ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : saved ? (
-                            "Saved"
-                        ) : (
-                            "Save changes"
-                        )}
-                    </button>
+                    <div className="flex flex-col items-start sm:items-end gap-1">
+                        <button
+                            onClick={() => handleSave()}
+                            disabled={saving}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                        >
+                            {saving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : saved ? (
+                                "Saved"
+                            ) : (
+                                "Save changes"
+                            )}
+                        </button>
+                        <p className="text-xs text-muted">
+                            Click to persist all edits to the server
+                        </p>
+                    </div>
                 </div>
 
                 {error && (
@@ -324,20 +357,65 @@ export default function AdminHomepagePage() {
                         <h2 className="text-lg font-semibold text-foreground">Section titles</h2>
                     </div>
                     <div className="bg-white border border-border/50 rounded-xl p-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="space-y-3">
                             {TITLE_KEYS.map(({ key, label }) => (
-                                <div key={key}>
-                                    <label className="block text-xs font-medium text-muted mb-1">{label}</label>
-                                    <input
-                                        type="text"
-                                        value={config.titles[key]}
-                                        onChange={(e) => updateTitles(key, e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg border border-border text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                    />
+                                <div
+                                    key={key}
+                                    className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0 last:pb-0"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-xs font-medium text-muted">{label}</div>
+                                        <div className="text-sm text-foreground mt-0.5 truncate">
+                                            {config.titles[key] || "—"}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => openTitleDialog(key)}
+                                        className="shrink-0 p-2 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                                        title="Edit title"
+                                    >
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
                                 </div>
                             ))}
                         </div>
                     </div>
+
+                    <Dialog.Root open={editingTitleKey !== null} onOpenChange={(open) => !open && closeTitleDialog()}>
+                        <Dialog.Portal>
+                            <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
+                            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-md bg-white rounded-2xl shadow-xl p-6 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95">
+                                <div className="flex items-start justify-between gap-4 mb-4">
+                                    <Dialog.Title className="text-lg font-bold text-foreground">
+                                        {editingTitleKey !== null ? TITLE_KEYS.find((t) => t.key === editingTitleKey)?.label ?? "Edit section title" : "Edit section title"}
+                                    </Dialog.Title>
+                                    <Dialog.Close className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-section-bg transition-colors shrink-0">
+                                        <X className="w-4 h-4" />
+                                    </Dialog.Close>
+                                </div>
+                                <input
+                                    type="text"
+                                    value={titleDialogValue}
+                                    onChange={(e) => setTitleDialogValue(e.target.value)}
+                                    className="w-full px-3 py-2 rounded-lg border border-border text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary mb-6"
+                                    placeholder="Section title"
+                                />
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={saveTitleFromDialog}
+                                        className="px-5 py-2.5 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
+                                    >
+                                        Save
+                                    </button>
+                                    <Dialog.Close className="px-5 py-2.5 rounded-xl text-sm font-medium text-muted border border-border hover:bg-section-bg transition-colors">
+                                        Cancel
+                                    </Dialog.Close>
+                                </div>
+                            </Dialog.Content>
+                        </Dialog.Portal>
+                    </Dialog.Root>
                 </section>
 
                 {/* Item limits */}
@@ -627,11 +705,11 @@ export default function AdminHomepagePage() {
                     </Dialog.Root>
                 </section>
 
-                {/* Nuggets On The Go */}
+                {/* Listen (nuggets) */}
                 <section className="mb-10">
                     <div className="flex items-center gap-2 mb-4">
                         <Headphones className="w-5 h-5 text-primary" />
-                        <h2 className="text-lg font-semibold text-foreground">Nuggets On The Go</h2>
+                        <h2 className="text-lg font-semibold text-foreground">Listen</h2>
                         <button
                             type="button"
                             onClick={() => openNuggetDialog(null)}

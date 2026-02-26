@@ -30,6 +30,7 @@ export interface HomepageConfig {
         latestNews: boolean;
         ourMethodology: boolean;
         ourPodcast: boolean;
+        listen: boolean;
         ourHomeTours: boolean;
         featuredArticles: boolean;
         newsletter: boolean;
@@ -39,6 +40,7 @@ export interface HomepageConfig {
         featuredStories: string;
         ourMethodology: string;
         ourPodcast: string;
+        listen: string;
         ourHomeTours: string;
         featuredArticles: string;
     };
@@ -109,6 +111,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
         latestNews: true,
         ourMethodology: true,
         ourPodcast: true,
+        listen: true,
         ourHomeTours: true,
         featuredArticles: true,
         newsletter: true,
@@ -118,7 +121,8 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
         featuredStories: "Featured Stories",
         ourMethodology: "Our Methodology",
         ourPodcast: "Latest Podcast",
-        ourHomeTours: "Our Home Tours",
+        listen: "Listen",
+        ourHomeTours: "Watch",
         featuredArticles: "Featured Articles",
     },
     limits: {
@@ -131,15 +135,19 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
     },
     methodology: defaultMethodology,
     podcast: defaultPodcast,
-    nuggetsTitle: "Nuggets On The Go",
+    nuggetsTitle: "Listen",
     nuggets: defaultNuggets,
 };
 
 export function mergeWithDefault(partial: Partial<HomepageConfig> | null): HomepageConfig {
     if (!partial) return DEFAULT_HOMEPAGE_CONFIG;
+    const mergedTitles = { ...DEFAULT_HOMEPAGE_CONFIG.titles, ...partial.titles };
+    if (typeof partial.nuggetsTitle === "string") {
+        mergedTitles.listen = partial.nuggetsTitle;
+    }
     return {
         sections: { ...DEFAULT_HOMEPAGE_CONFIG.sections, ...partial.sections },
-        titles: { ...DEFAULT_HOMEPAGE_CONFIG.titles, ...partial.titles },
+        titles: mergedTitles,
         limits: { ...DEFAULT_HOMEPAGE_CONFIG.limits, ...partial.limits },
         methodology: Array.isArray(partial.methodology) ? partial.methodology : DEFAULT_HOMEPAGE_CONFIG.methodology,
         podcast: partial.podcast && typeof partial.podcast === "object"

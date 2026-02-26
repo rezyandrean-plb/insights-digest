@@ -136,11 +136,9 @@ export default function LatestNews({ article, reels, newLaunchItems, webinarItem
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Link>
 
-                        {/* Meta: category | author | read time */}
+                        {/* Meta: category | read time */}
                         <div className="flex items-center flex-wrap gap-0 mt-6 text-xs sm:text-sm">
                             <span className="text-primary font-medium">Singapore Real Estate</span>
-                            <span className="mx-2 text-black/60">|</span>
-                            <span className="text-primary font-medium">{article.author}</span>
                             <span className="mx-2 text-black/60">|</span>
                             <span className="text-black">{article.readTime}</span>
                         </div>

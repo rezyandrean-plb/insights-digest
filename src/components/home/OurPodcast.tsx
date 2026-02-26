@@ -64,12 +64,13 @@ interface OurPodcastProps {
     podcast?: HomepagePodcast;
     nuggetsTitle?: string;
     nuggets?: HomepageNugget[];
+    showNuggets?: boolean;
 }
 
-export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: nuggetsTitleProp, nuggets: nuggetsProp }: OurPodcastProps) {
+export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: nuggetsTitleProp, nuggets: nuggetsProp, showNuggets = true }: OurPodcastProps) {
     const podcastData = podcastProp ?? defaultPodcastData;
     const sectionLabel = title ?? podcastData.label;
-    const nuggetsTitle = nuggetsTitleProp ?? "Nuggets On The Go";
+    const nuggetsTitle = nuggetsTitleProp ?? "Listen";
     const nuggetsList = nuggetsProp && nuggetsProp.length > 0 ? nuggetsProp : nuggets;
     return (
         <section className="py-0">
@@ -112,41 +113,45 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
                 </div>
             </ScrollReveal>
 
-            {/* Nuggets On The Go */}
-            <div className="container-custom py-10 sm:py-14 lg:py-16">
-                <ScrollReveal>
-                    <div className="border-t border-primary/30 pt-8 sm:pt-10">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-xl sm:text-2xl font-medium text-secondary font-[var(--font-poppins)]">
-                                {nuggetsTitle}
-                            </h3>
-                            <Link
-                                href="#"
-                                className="text-xs sm:text-sm text-black hover:text-primary transition-colors"
-                            >
-                                see all &gt;
-                            </Link>
-                        </div>
+            {showNuggets && (
+                <>
+                    {/* Listen (nuggets) */}
+                    <div className="container-custom py-10 sm:py-14 lg:py-16">
+                        <ScrollReveal>
+                            <div className="border-t border-primary/30 pt-8 sm:pt-10">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-xl sm:text-2xl font-medium text-secondary font-[var(--font-poppins)]">
+                                        {nuggetsTitle}
+                                    </h3>
+                                    <Link
+                                        href="#"
+                                        className="text-xs sm:text-sm text-black hover:text-primary transition-colors"
+                                    >
+                                        see all &gt;
+                                    </Link>
+                                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 lg:gap-x-14 gap-y-6 sm:gap-y-8">
-                            {nuggetsList.map((item) => (
-                                <Link
-                                    key={item.id}
-                                    href="#"
-                                    className="block group"
-                                >
-                                    <h4 className="text-sm sm:text-[15px] font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                                        {item.title}
-                                    </h4>
-                                    <p className="text-xs sm:text-sm text-black mt-1.5 leading-relaxed line-clamp-1">
-                                        {item.description}
-                                    </p>
-                                </Link>
-                            ))}
-                        </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 lg:gap-x-14 gap-y-6 sm:gap-y-8">
+                                    {nuggetsList.map((item) => (
+                                        <Link
+                                            key={item.id}
+                                            href="#"
+                                            className="block group"
+                                        >
+                                            <h4 className="text-sm sm:text-[15px] font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                                {item.title}
+                                            </h4>
+                                            <p className="text-xs sm:text-sm text-black mt-1.5 leading-relaxed line-clamp-1">
+                                                {item.description}
+                                            </p>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </ScrollReveal>
                     </div>
-                </ScrollReveal>
-            </div>
+                </>
+            )}
         </section>
     );
 }

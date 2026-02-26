@@ -107,8 +107,9 @@ export default function HomePage() {
         <OurPodcast
           title={titles.ourPodcast}
           podcast={cfg.podcast}
-          nuggetsTitle={cfg.nuggetsTitle}
+          nuggetsTitle={titles.listen ?? cfg.nuggetsTitle}
           nuggets={cfg.nuggets.length > 0 ? cfg.nuggets : undefined}
+          showNuggets={sections.listen}
         />
       ) : null}
       {sections.ourHomeTours && homeTours.length > 0 ? (

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, Send, FileText, BarChart3, Rocket, Megaphone, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowRight, FileText, BarChart3, Rocket, Megaphone, CheckCircle2 } from "lucide-react";
 import Newsletter from "@/components/Newsletter";
 import ScrollReveal from "@/components/ScrollReveal";
 import { articles } from "@/lib/data";
@@ -15,13 +15,12 @@ const stageOptions = ["Exploring", "Shortlisting options", "Ready to transact", 
 const propertyTypeOptions = ["HDB", "Condo", "Landed", "Mixed / Unsure"];
 
 const collaborateItems = [
-    { label: "Sponsored editorial features", icon: FileText },
-    { label: "Market deep dives", icon: BarChart3 },
-    { label: "New Launch explainers", icon: Rocket },
-    { label: "Multi-platform content campaigns", icon: Megaphone },
+    { label: "Sponsored Editorial Features", icon: FileText },
+    { label: "Market Deep Dives", icon: BarChart3 },
+    { label: "New Launch Explainers", icon: Rocket },
+    { label: "Multi-Platform Content Campaigns", icon: Megaphone },
 ];
 
-const TELEGRAM_CHANNEL_URL = "https://t.me/+fiknlY73pYwyNTI1";
 const CONTACT_EMAIL = "hello@insightsdigest.sg";
 
 function ContactSidebar() {
@@ -47,22 +46,6 @@ function ContactSidebar() {
                     </p>
                 </div>
             </div>
-
-            <a
-                href={TELEGRAM_CHANNEL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group rounded-2xl bg-white border border-border/50 p-5 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-[#195F60]/30 transition-all duration-200"
-            >
-                <div className="w-10 h-10 rounded-xl bg-[#195F60]/10 flex items-center justify-center shrink-0 group-hover:bg-[#195F60]/20 transition-colors">
-                    <Send className="w-4.5 h-4.5 text-[#195F60]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-secondary block">Telegram</span>
-                    <span className="text-xs text-secondary/60">Join our channel</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-secondary/30 group-hover:text-[#195F60] group-hover:translate-x-0.5 transition-all" />
-            </a>
         </div>
     );
 }
@@ -178,13 +161,16 @@ export default function ContactPage() {
                                 About Us
                             </span>
                             <h2 className="text-2xl sm:text-3xl font-bold text-secondary leading-snug font-[var(--font-poppins)]">
-                                Independent. Data-driven. Editorial-first.
+                                We create real estate content people trust.
                             </h2>
                             <p className="text-base sm:text-lg text-secondary/70 mt-4 leading-relaxed">
-                                Insights Digest is an independent editorial platform focused on clear, structured,
-                                and data-driven property analysis. We partner with brands that value credibility
-                                over noise. If you are launching, repositioning, or looking to communicate with
-                                clarity — let&apos;s talk.
+                                Insights Digest is an independent editorial platform focused on clear, structured, and data-driven property analysis.
+                            </p>
+                            <p className="text-base sm:text-lg text-secondary/70 mt-4 leading-relaxed">
+                                We partner with brands that value credibility over noise.
+                            </p>
+                            <p className="text-base sm:text-lg text-secondary/70 mt-4 leading-relaxed">
+                                If you are launching, repositioning, or looking to communicate with clarity — let&apos;s talk.
                             </p>
                         </ScrollReveal>
 
@@ -252,7 +238,7 @@ export default function ContactPage() {
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     <div>
                                         <p className="text-sm font-semibold text-secondary mb-3">
-                                            I am enquiring about: *
+                                            I am enquiring about (Select one): *
                                         </p>
                                         <div className="flex gap-3">
                                             {enquiryTypes.map((option) => {

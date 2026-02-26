@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { AtSign, Mail } from "lucide-react";
+import { AtSign, ArrowRight, Mail, Send } from "lucide-react";
+
+const TELEGRAM_CHANNEL_URL = "https://t.me/+fiknlY73pYwyNTI1";
 
 // Same links as Navbar - category pages + Watch submenu + Contact
 const exploreLinksLeft = [
@@ -112,9 +114,6 @@ export default function Footer() {
                         <h4 className="text-base font-bold mb-3 text-secondary">Contact Us</h4>
                         <div className="space-y-4">
                             <div>
-                                <p className="text-xs text-secondary/60 mb-1.5">
-                                    For Collaborations / Speaking Engagements / Seminars Hotline:
-                                </p>
                                 <a
                                     href="mailto:hello@insightsdigest.sg"
                                     className="flex items-center gap-2 text-sm text-secondary/80 hover:text-primary-dark transition-colors"
@@ -145,6 +144,21 @@ export default function Footer() {
                                     </a>
                                 ))}
                         </div>
+                        <a
+                            href={TELEGRAM_CHANNEL_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 group inline-flex items-center gap-3 rounded-xl bg-white/80 border border-secondary/15 p-3 pr-4 w-full max-w-[240px] shadow-sm hover:shadow-md hover:border-[#195F60]/30 transition-all duration-200"
+                        >
+                            <div className="w-9 h-9 rounded-lg bg-[#195F60]/10 flex items-center justify-center shrink-0 group-hover:bg-[#195F60]/20 transition-colors">
+                                <Send className="w-4 h-4 text-[#195F60]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <span className="text-sm font-semibold text-secondary block">Telegram</span>
+                                <span className="text-xs text-secondary/60">Join our channel</span>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-secondary/30 group-hover:text-[#195F60] group-hover:translate-x-0.5 transition-all shrink-0" />
+                        </a>
                     </div>
                 </div>
 

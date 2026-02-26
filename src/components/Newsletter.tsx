@@ -2,17 +2,16 @@
 
 export default function Newsletter() {
     return (
-        <section className="bg-[#195F60] py-10 sm:py-14 lg:py-16">
+        <section className="bg-[#195F60] py-6 sm:py-8 lg:py-10">
             <div className="container-custom">
                 <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
                     {/* Left content */}
-                    <div className="w-full lg:w-3/5">
+                    <div className="w-full lg:w-1/2">
                         <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-bold text-white leading-tight font-[var(--font-poppins)]">
-                            Never miss an update.<br />
-                            Get our newsletter.
+                            Sign up for our Weekly Brief.
                         </h2>
                         <p className="text-sm sm:text-base text-white/90 mt-4 max-w-md leading-relaxed">
-                            Sign up for our Weekly Newsletter to your email. Receive the latest news and updates regarding the Singapore property market.
+                            Get concise, data-backed insights on Singapore's property market — straight to your inbox.
                         </p>
                         <div className="flex items-center gap-3 mt-6 max-w-md">
                             <input
@@ -26,12 +25,12 @@ export default function Newsletter() {
                         </div>
                     </div>
 
-                    {/* Right image */}
-                    <div className="hidden lg:flex w-2/5 items-center justify-center">
+                    {/* Right image - expanded */}
+                    <div className="w-full lg:w-1/2 flex items-center justify-center">
                         <img
                             src="/images/homepage/newsletter-logo.webp"
                             alt="Newsletter"
-                            className="w-full h-auto object-contain"
+                            className="w-full max-w-md lg:max-w-lg xl:max-w-xl h-auto object-contain"
                         />
                     </div>
                 </div>
