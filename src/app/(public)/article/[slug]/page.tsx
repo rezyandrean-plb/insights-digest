@@ -54,18 +54,16 @@ export default function ArticlePage() {
     }
 
     return (
-        <article className="pb-16">
+        <article className="pb-16 bg-white">
             <div className="container-custom pt-8 lg:pt-12">
                 {/* Title */}
-                <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-secondary leading-[125%] font-[var(--font-poppins)] max-w-2xl">
+                <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-black leading-[125%] font-[var(--font-poppins)] max-w-2xl">
                     {article.title}
                 </h1>
 
                 {/* Meta line */}
                 <div className="flex items-center flex-wrap gap-0 mt-4 text-sm text-black">
                     <span>Singapore&apos;s Coastal Property Frontier</span>
-                    <span className="mx-2">|</span>
-                    <span>{article.author}</span>
                     <span className="mx-2">|</span>
                     <span>{article.date}</span>
                 </div>
@@ -84,20 +82,20 @@ export default function ArticlePage() {
                         </div>
 
                         {/* Lead paragraph */}
-                        <p className="text-sm sm:text-base text-black leading-relaxed mb-10">
+                        <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-10">
                             Yesterday, a team of analysts departed from the Keppel Bay Tower, embarking on a fact-finding mission to Sentosa Cove. HDB is set to introduce sustainable living concepts in Punggol Northshore with new eco-friendly housing projects.
                         </p>
 
                         {/* Sections */}
                         {sections.map((section) => (
                             <div key={section.id} id={section.id} className="mb-12 scroll-mt-24">
-                                <h2 className="text-xl sm:text-2xl font-bold text-secondary leading-snug mb-4 font-[var(--font-poppins)]">
+                                <h2 className="text-xl sm:text-2xl font-bold text-black leading-snug mb-4 font-[var(--font-poppins)]">
                                     {section.heading}
                                 </h2>
                                 {section.paragraphs.map((p, i) => (
                                     <p
                                         key={i}
-                                        className="text-sm sm:text-base text-black leading-relaxed mb-4"
+                                        className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4"
                                     >
                                         {p}
                                     </p>

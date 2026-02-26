@@ -41,8 +41,6 @@ export default function HeroSection({ article }: HeroSectionProps) {
                         <div className="flex items-center gap-0 mt-6 text-xs sm:text-sm text-white/60 flex-wrap">
                             <span>Singapore&apos;s Coastal Property Frontier</span>
                             <span className="mx-2 sm:mx-3">|</span>
-                            <span>{article.author}</span>
-                            <span className="mx-2 sm:mx-3">|</span>
                             <span>{article.date}</span>
                         </div>
                     </motion.div>

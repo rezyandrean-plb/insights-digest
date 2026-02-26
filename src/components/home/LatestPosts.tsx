@@ -26,10 +26,8 @@ export default function LatestPosts({ articles, title = "Latest Post" }: LatestP
                     {articles.map((article, i) => (
                         <ScrollReveal key={article.id} delay={i * 0.1}>
                             <Link href={`/article/${article.slug}`} className="group block">
-                                {/* Author & date */}
+                                {/* Date */}
                                 <div className="flex items-center text-xs text-black mb-2">
-                                    <span>{article.author}</span>
-                                    <span className="mx-2">|</span>
                                     <span>{article.date}</span>
                                 </div>
 
