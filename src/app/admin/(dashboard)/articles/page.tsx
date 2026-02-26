@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Dialog from "@radix-ui/react-dialog";
+import { toast } from "sonner";
 import {
     Search,
     Plus,
@@ -17,8 +18,9 @@ import {
     Eye,
     ImageIcon,
     Loader2,
-    AlertCircle,
     Crown,
+    LayoutList,
+    UploadCloud,
 } from "lucide-react";
 import type { Article, ArticleCategory } from "@/lib/data";
 
@@ -66,7 +68,6 @@ export default function AdminArticlesPage() {
     const [articlesList, setArticlesList] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [filterCategory, setFilterCategory] = useState<ArticleCategory | "All">("All");
     const [currentPage, setCurrentPage] = useState(1);
@@ -77,6 +78,27 @@ export default function AdminArticlesPage() {
     const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
     const [heroCandidate, setHeroCandidate] = useState<Article | null>(null);
     const [formData, setFormData] = useState(emptyArticle);
+    const [imageUploading, setImageUploading] = useState(false);
+    const [imageDragOver, setImageDragOver] = useState(false);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+
+    const uploadImage = useCallback(async (file: File) => {
+        setImageUploading(true);
+        const toastId = toast.loading("Uploading image…");
+        try {
+            const body = new FormData();
+            body.append("file", file);
+            const res = await fetch("/api/upload", { method: "POST", body });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? "Upload failed");
+            updateField("image", data.url);
+            toast.success("Image uploaded.", { id: toastId });
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : "Image upload failed.", { id: toastId });
+        } finally {
+            setImageUploading(false);
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchArticles = useCallback(async () => {
         try {
@@ -85,7 +107,7 @@ export default function AdminArticlesPage() {
             const data = await res.json();
             setArticlesList(data);
         } catch {
-            setError("Failed to load articles from server.");
+            toast.error("Failed to load articles from server.");
         } finally {
             setLoading(false);
         }
@@ -164,7 +186,6 @@ export default function AdminArticlesPage() {
     const handleSave = useCallback(async () => {
         if (!formData.title.trim() || !formData.slug.trim() || saving) return;
         setSaving(true);
-        setError(null);
 
         try {
             if (editingArticle) {
@@ -178,6 +199,7 @@ export default function AdminArticlesPage() {
                 setArticlesList((prev) =>
                     prev.map((a) => (a.id === editingArticle.id ? updated : a))
                 );
+                toast.success("Article updated successfully.");
             } else {
                 const res = await fetch("/api/articles", {
                     method: "POST",
@@ -187,12 +209,13 @@ export default function AdminArticlesPage() {
                 if (!res.ok) throw new Error("Create failed");
                 const created = await res.json();
                 setArticlesList((prev) => [created, ...prev]);
+                toast.success("Article created successfully.");
             }
             setDialogOpen(false);
             setEditingArticle(null);
             setFormData(emptyArticle);
         } catch {
-            setError(
+            toast.error(
                 editingArticle
                     ? "Failed to update article. Please try again."
                     : "Failed to create article. Please try again."
@@ -205,7 +228,6 @@ export default function AdminArticlesPage() {
     const handleDelete = useCallback(async () => {
         if (!deletingArticle || saving) return;
         setSaving(true);
-        setError(null);
 
         try {
             const res = await fetch(`/api/articles?id=${deletingArticle.id}`, {
@@ -220,8 +242,9 @@ export default function AdminArticlesPage() {
             if (paginated.length === 1 && currentPage > 1) {
                 setCurrentPage((p) => p - 1);
             }
+            toast.success("Article deleted.");
         } catch {
-            setError("Failed to delete article. Please try again.");
+            toast.error("Failed to delete article. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -229,7 +252,6 @@ export default function AdminArticlesPage() {
 
     const toggleFeatured = useCallback(
         async (article: Article) => {
-            setError(null);
             try {
                 const res = await fetch("/api/articles", {
                     method: "PUT",
@@ -252,8 +274,13 @@ export default function AdminArticlesPage() {
                 setArticlesList((prev) =>
                     prev.map((a) => (a.id === article.id ? updated : a))
                 );
+                toast.success(
+                    updated.featured
+                        ? `"${updated.title}" marked as featured.`
+                        : `"${updated.title}" removed from featured.`
+                );
             } catch {
-                setError("Failed to toggle featured status.");
+                toast.error("Failed to toggle featured status.");
             }
         },
         []
@@ -267,7 +294,6 @@ export default function AdminArticlesPage() {
     const confirmSetHero = useCallback(async () => {
         if (!heroCandidate || saving) return;
         setSaving(true);
-        setError(null);
 
         try {
             const res = await fetch("/api/articles/hero", {
@@ -283,10 +309,11 @@ export default function AdminArticlesPage() {
                     isHero: a.id === heroCandidate.id,
                 }))
             );
+            toast.success(`"${heroCandidate.title}" set as hero article.`);
             setHeroDialogOpen(false);
             setHeroCandidate(null);
         } catch {
-            setError("Failed to set hero article. Please try again.");
+            toast.error("Failed to set hero article. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -315,19 +342,6 @@ export default function AdminArticlesPage() {
     return (
         <div className="py-10 sm:py-14 lg:py-16">
             <div className="container-custom">
-                {error && (
-                    <div className="mb-4 flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        {error}
-                        <button
-                            onClick={() => setError(null)}
-                            className="ml-auto text-red-400 hover:text-red-600"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
-
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
@@ -547,6 +561,13 @@ export default function AdminArticlesPage() {
                                                             title="View"
                                                         >
                                                             <Eye className="w-4 h-4" />
+                                                        </Link>
+                                                        <Link
+                                                            href={`/admin/articles/${article.id}/sections`}
+                                                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-secondary/10 hover:text-secondary transition-colors"
+                                                            title="Edit Sections"
+                                                        >
+                                                            <LayoutList className="w-4 h-4" />
                                                         </Link>
                                                         <button
                                                             onClick={() =>
@@ -773,28 +794,92 @@ export default function AdminArticlesPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-foreground mb-1.5">
-                                        Image URL
+                                        Cover Image
                                     </label>
+
+                                    {/* Hidden file input */}
                                     <input
-                                        type="text"
-                                        value={formData.image}
-                                        onChange={(e) =>
-                                            updateField("image", e.target.value)
-                                        }
-                                        placeholder="https://images.unsplash.com/..."
-                                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                                        ref={imageInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) uploadImage(file);
+                                            e.target.value = "";
+                                        }}
                                     />
-                                    {formData.image && (
-                                        <div className="mt-2 w-20 h-20 rounded-lg overflow-hidden border border-border/50">
+
+                                    {formData.image ? (
+                                        /* Preview state */
+                                        <div className="relative w-full h-44 rounded-xl overflow-hidden border border-border/50 group">
                                             <img
                                                 src={formData.image}
-                                                alt="Preview"
+                                                alt="Cover preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).style.display = "none";
                                                 }}
                                             />
+                                            {/* Overlay on hover */}
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => imageInputRef.current?.click()}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-foreground hover:bg-white/90 transition-colors"
+                                                >
+                                                    <UploadCloud className="w-3.5 h-3.5" />
+                                                    Change
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateField("image", "")}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-red-600 hover:bg-white/90 transition-colors"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                    Remove
+                                                </button>
+                                            </div>
                                         </div>
+                                    ) : (
+                                        /* Upload zone */
+                                        <button
+                                            type="button"
+                                            onClick={() => !imageUploading && imageInputRef.current?.click()}
+                                            onDragOver={(e) => { e.preventDefault(); setImageDragOver(true); }}
+                                            onDragLeave={() => setImageDragOver(false)}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                setImageDragOver(false);
+                                                const file = e.dataTransfer.files?.[0];
+                                                if (file) uploadImage(file);
+                                            }}
+                                            disabled={imageUploading}
+                                            className={`w-full h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer ${
+                                                imageDragOver
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-border hover:border-primary/50 hover:bg-section-bg"
+                                            }`}
+                                        >
+                                            {imageUploading ? (
+                                                <>
+                                                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                                    <span className="text-xs text-muted">Uploading…</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UploadCloud className={`w-7 h-7 ${imageDragOver ? "text-primary" : "text-muted"}`} />
+                                                    <div className="text-center">
+                                                        <p className="text-sm font-medium text-foreground">
+                                                            {imageDragOver ? "Drop to upload" : "Click to upload"}
+                                                        </p>
+                                                        <p className="text-xs text-muted mt-0.5">
+                                                            or drag & drop · JPEG, PNG, WebP, GIF · max 5 MB
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </button>
                                     )}
                                 </div>
 

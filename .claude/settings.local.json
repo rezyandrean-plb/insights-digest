@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx drizzle-kit push)",
+      "Bash(cat \"/Users/nadrean/Documents/PLB/silo-projects/src/app/admin/\\(dashboard\\)/articles/page.tsx\")"
+    ]
+  }
+}
