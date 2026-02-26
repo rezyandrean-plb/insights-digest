@@ -142,7 +142,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
 export function mergeWithDefault(partial: Partial<HomepageConfig> | null): HomepageConfig {
     if (!partial) return DEFAULT_HOMEPAGE_CONFIG;
     const mergedTitles = { ...DEFAULT_HOMEPAGE_CONFIG.titles, ...partial.titles };
-    if (typeof partial.nuggetsTitle === "string") {
+    if (typeof partial.nuggetsTitle === "string" && !partial.titles?.listen) {
         mergedTitles.listen = partial.nuggetsTitle;
     }
     return {
