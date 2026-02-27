@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
     siteDescription:
         "Your trusted source for Singapore real estate news, market analysis, property trends, and investment insights.",
     siteUrl: "https://insights.example.com",
-    logoUrl: "/images/insights-logo.png",
+    logoUrl: "/images/insights-logo.webp",
     primaryColor: "#2a9d8f",
     enableSearch: "true",
     articlesPerPage: "9",
