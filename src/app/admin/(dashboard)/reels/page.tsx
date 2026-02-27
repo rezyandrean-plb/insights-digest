@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Dialog from "@radix-ui/react-dialog";
+import { toast } from "sonner";
 import {
     Search,
     Plus,
@@ -19,6 +20,7 @@ import {
     Clock,
     Loader2,
     AlertCircle,
+    UploadCloud,
 } from "lucide-react";
 import type { Reel } from "@/lib/data";
 
@@ -69,6 +71,27 @@ export default function AdminReelsPage() {
     const [editingReel, setEditingReel] = useState<Reel | null>(null);
     const [deletingReel, setDeletingReel] = useState<Reel | null>(null);
     const [formData, setFormData] = useState(emptyReel);
+    const [thumbnailUploading, setThumbnailUploading] = useState(false);
+    const [thumbnailDragOver, setThumbnailDragOver] = useState(false);
+    const thumbnailInputRef = useRef<HTMLInputElement>(null);
+
+    const uploadThumbnail = useCallback(async (file: File) => {
+        setThumbnailUploading(true);
+        const toastId = toast.loading("Uploading thumbnail…");
+        try {
+            const body = new FormData();
+            body.append("file", file);
+            const res = await fetch("/api/upload", { method: "POST", body });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? "Upload failed");
+            setFormData((prev) => ({ ...prev, thumbnail: data.url }));
+            toast.success("Thumbnail uploaded.", { id: toastId });
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : "Thumbnail upload failed.", { id: toastId });
+        } finally {
+            setThumbnailUploading(false);
+        }
+    }, []);
 
     const fetchReels = useCallback(async () => {
         try {
@@ -166,6 +189,7 @@ export default function AdminReelsPage() {
                 setReelsList((prev) =>
                     prev.map((r) => (r.id === editingReel.id ? updated : r))
                 );
+                toast.success("Reel updated successfully.");
             } else {
                 const res = await fetch("/api/reels", {
                     method: "POST",
@@ -175,6 +199,7 @@ export default function AdminReelsPage() {
                 if (!res.ok) throw new Error("Create failed");
                 const created = await res.json();
                 setReelsList((prev) => [created, ...prev]);
+                toast.success("Reel created successfully.");
             }
             setDialogOpen(false);
             setEditingReel(null);
@@ -205,6 +230,7 @@ export default function AdminReelsPage() {
             );
             setDeleteDialogOpen(false);
             setDeletingReel(null);
+            toast.success("Reel deleted.");
             if (paginated.length === 1 && currentPage > 1) {
                 setCurrentPage((p) => p - 1);
             }
@@ -625,16 +651,92 @@ export default function AdminReelsPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-foreground mb-1.5">
-                                        Thumbnail URL
+                                        Thumbnail
                                     </label>
+
+                                    <input
+                                        ref={thumbnailInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) uploadThumbnail(file);
+                                            e.target.value = "";
+                                        }}
+                                    />
+
+                                    {formData.thumbnail ? (
+                                        <div className="relative w-full h-28 rounded-xl overflow-hidden border border-border/50 group">
+                                            <img
+                                                src={formData.thumbnail}
+                                                alt="Thumbnail preview"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = "none";
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => thumbnailInputRef.current?.click()}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-foreground hover:bg-white/90 transition-colors"
+                                                >
+                                                    <UploadCloud className="w-3.5 h-3.5" />
+                                                    Change
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateField("thumbnail", "")}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-red-600 hover:bg-white/90 transition-colors"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => !thumbnailUploading && thumbnailInputRef.current?.click()}
+                                            onDragOver={(e) => { e.preventDefault(); setThumbnailDragOver(true); }}
+                                            onDragLeave={() => setThumbnailDragOver(false)}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                setThumbnailDragOver(false);
+                                                const file = e.dataTransfer.files?.[0];
+                                                if (file) uploadThumbnail(file);
+                                            }}
+                                            disabled={thumbnailUploading}
+                                            className={`w-full h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer ${
+                                                thumbnailDragOver
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-border hover:border-primary/50 hover:bg-section-bg"
+                                            }`}
+                                        >
+                                            {thumbnailUploading ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                                    <span className="text-xs text-muted">Uploading…</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UploadCloud className={`w-6 h-6 ${thumbnailDragOver ? "text-primary" : "text-muted"}`} />
+                                                    <p className="text-sm font-medium text-foreground">
+                                                        {thumbnailDragOver ? "Drop to upload" : "Click to upload"}
+                                                    </p>
+                                                    <p className="text-xs text-muted">or paste URL below</p>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+
                                     <input
                                         type="text"
                                         value={formData.thumbnail}
-                                        onChange={(e) =>
-                                            updateField("thumbnail", e.target.value)
-                                        }
-                                        placeholder="https://images.unsplash.com/..."
-                                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                                        onChange={(e) => updateField("thumbnail", e.target.value)}
+                                        placeholder="Or paste thumbnail URL (e.g. https://...)"
+                                        className="w-full mt-2 px-4 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                                     />
                                     {(formData.thumbnail || formData.videoUrl) && (
                                         <div className="mt-2 w-24 h-16 rounded-lg overflow-hidden border border-border/50 relative bg-section-bg">

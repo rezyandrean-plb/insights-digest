@@ -59,8 +59,12 @@ export default function HeroSection({ article }: HeroSectionProps) {
                                 className="w-full h-full object-cover"
                             />
                             {/* Small watermark badge */}
-                            <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded text-[10px] font-semibold text-secondary tracking-wide uppercase">
-                                PLB | Insights
+                            <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm px-2.5 py-1 rounded flex items-center">
+                                <img
+                                    src="/images/insights-logo.webp"
+                                    alt="Insights Digest"
+                                    className="h-5 w-auto"
+                                />
                             </div>
                         </div>
                     </motion.div>
