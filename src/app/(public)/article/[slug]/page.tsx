@@ -3,7 +3,8 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { articles } from "@/lib/data";
+import { articles as staticArticles } from "@/lib/data";
+import type { Article } from "@/lib/data";
 
 const socialLinks = [
     { label: "Copy Link", href: "#", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
@@ -18,8 +19,42 @@ const socialLinks = [
 export default function ArticlePage() {
     const params = useParams();
     const slug = params.slug as string;
-    const article = articles.find((a) => a.slug === slug);
+    const [article, setArticle] = useState<Article | null>(null);
+    const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState<string>("");
+
+    useEffect(() => {
+        if (!slug) {
+            setLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setLoading(true);
+        fetch(`/api/articles?slug=${encodeURIComponent(slug)}`)
+            .then((res) => {
+                if (!res.ok) return null;
+                return res.json();
+            })
+            .then((data) => {
+                if (cancelled) return;
+                if (data && data.slug) {
+                    setArticle(data as Article);
+                } else {
+                    const fromStatic = staticArticles.find((a) => a.slug === slug) ?? null;
+                    setArticle(fromStatic);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    const fromStatic = staticArticles.find((a) => a.slug === slug) ?? null;
+                    setArticle(fromStatic);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => { cancelled = true; };
+    }, [slug]);
 
     const sections = article?.sections ?? [];
 
@@ -41,6 +76,14 @@ export default function ArticlePage() {
 
         return () => observer.disconnect();
     }, [sections]);
+
+    if (loading) {
+        return (
+            <div className="container-custom py-20 text-center">
+                <p className="text-muted">Loading article…</p>
+            </div>
+        );
+    }
 
     if (!article) {
         return (

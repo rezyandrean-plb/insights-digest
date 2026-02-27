@@ -21,6 +21,8 @@ import {
     Crown,
     LayoutList,
     UploadCloud,
+    Calendar,
+    Minus,
 } from "lucide-react";
 import type { Article, ArticleCategory } from "@/lib/data";
 
@@ -51,6 +53,42 @@ const categoryBadgeClass: Record<string, string> = {
     "Project Reviews": "bg-[#f0f4ff] text-[#4338ca]",
     "Home Radar": "bg-[#fff7ed] text-[#c2410c]",
 };
+
+// Date helpers — stored format: "Feb 27, 2026"
+function todayDisplayDate(): string {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), t.getDate()).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function displayDateToInputValue(displayDate: string): string {
+    if (!displayDate) return "";
+    const d = new Date(displayDate);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function inputValueToDisplayDate(value: string): string {
+    if (!value) return "";
+    const [y, mo, d] = value.split("-").map(Number);
+    return new Date(y, mo - 1, d).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+// ReadTime helpers — stored format: "X min read"
+function parseReadMinutes(readTime: string): number {
+    const match = readTime.match(/^(\d+)/);
+    return match ? parseInt(match[1], 10) : 5;
+}
 
 const emptyArticle: Omit<Article, "id"> = {
     slug: "",
@@ -158,7 +196,7 @@ export default function AdminArticlesPage() {
 
     const openCreateDialog = useCallback(() => {
         setEditingArticle(null);
-        setFormData(emptyArticle);
+        setFormData({ ...emptyArticle, date: todayDisplayDate(), readTime: "5 min read" });
         setDialogOpen(true);
     }, []);
 
@@ -762,33 +800,54 @@ export default function AdminArticlesPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Date — native picker, stored as "Feb 27, 2026" */}
                                     <div>
                                         <label className="block text-sm font-medium text-foreground mb-1.5">
                                             Date
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={formData.date}
-                                            onChange={(e) =>
-                                                updateField("date", e.target.value)
-                                            }
-                                            placeholder="Feb 24, 2026"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                                        />
+                                        <div className="relative">
+                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-light pointer-events-none z-10" />
+                                            <input
+                                                type="date"
+                                                value={displayDateToInputValue(formData.date)}
+                                                onChange={(e) =>
+                                                    updateField("date", inputValueToDisplayDate(e.target.value))
+                                                }
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                                            />
+                                        </div>
                                     </div>
+
+                                    {/* Read Time — minutes stepper, stored as "X min read" */}
                                     <div>
                                         <label className="block text-sm font-medium text-foreground mb-1.5">
                                             Read Time
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={formData.readTime}
-                                            onChange={(e) =>
-                                                updateField("readTime", e.target.value)
-                                            }
-                                            placeholder="5 min read"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground placeholder:text-muted-light focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                                        />
+                                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const m = Math.max(1, parseReadMinutes(formData.readTime) - 1);
+                                                    updateField("readTime", `${m} min read`);
+                                                }}
+                                                className="w-7 h-7 flex items-center justify-center rounded-lg bg-muted/60 hover:bg-muted text-foreground transition-colors"
+                                            >
+                                                <Minus className="w-3.5 h-3.5" />
+                                            </button>
+                                            <span className="flex-1 text-center text-sm font-medium text-foreground">
+                                                {parseReadMinutes(formData.readTime)} min read
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const m = Math.min(60, parseReadMinutes(formData.readTime) + 1);
+                                                    updateField("readTime", `${m} min read`);
+                                                }}
+                                                className="w-7 h-7 flex items-center justify-center rounded-lg bg-muted/60 hover:bg-muted text-foreground transition-colors"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
