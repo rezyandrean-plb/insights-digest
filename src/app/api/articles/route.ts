@@ -21,8 +21,27 @@ function mapRow(r: typeof articles.$inferSelect) {
     };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const slug = searchParams.get("slug");
+
+        if (slug) {
+            const [row] = await db
+                .select()
+                .from(articles)
+                .where(eq(articles.slug, slug))
+                .limit(1);
+
+            if (!row) {
+                return NextResponse.json(
+                    { error: "Article not found" },
+                    { status: 404 }
+                );
+            }
+            return NextResponse.json(mapRow(row));
+        }
+
         const rows = await db
             .select()
             .from(articles)
