@@ -135,14 +135,19 @@ export default function ArticlePage() {
                                 <h2 className="text-xl sm:text-2xl font-bold text-black leading-snug mb-4 font-[var(--font-poppins)]">
                                     {section.heading}
                                 </h2>
-                                {section.paragraphs.map((p, i) => (
-                                    <p
-                                        key={i}
-                                        className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4"
-                                    >
-                                        {p}
-                                    </p>
-                                ))}
+                                {section.paragraphs.map((p, i) =>
+                                    p.trim().startsWith("<") ? (
+                                        <div
+                                            key={i}
+                                            className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1.5 [&_strong]:font-bold [&_em]:italic [&_s]:line-through [&_p]:mb-3 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-500"
+                                            dangerouslySetInnerHTML={{ __html: p }}
+                                        />
+                                    ) : (
+                                        <p key={i} className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4">
+                                            {p}
+                                        </p>
+                                    )
+                                )}
                                 {section.image && (
                                     <div className="rounded-2xl overflow-hidden mt-6">
                                         <img
