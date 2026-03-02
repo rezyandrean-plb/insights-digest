@@ -23,8 +23,10 @@ import {
     UploadCloud,
     Calendar,
     Minus,
+    FileText,
 } from "lucide-react";
 import type { Article, ArticleCategory } from "@/lib/data";
+import DocumentImportDialog from "@/components/admin/DocumentImportDialog";
 
 const CATEGORIES: ArticleCategory[] = [
     "Property",
@@ -112,6 +114,7 @@ export default function AdminArticlesPage() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [heroDialogOpen, setHeroDialogOpen] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [editingArticle, setEditingArticle] = useState<Article | null>(null);
     const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
     const [heroCandidate, setHeroCandidate] = useState<Article | null>(null);
@@ -398,13 +401,22 @@ export default function AdminArticlesPage() {
                             {articlesList.filter((a) => a.featured).length} featured
                         </p>
                     </div>
-                    <button
-                        onClick={openCreateDialog}
-                        className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors shadow-sm self-start sm:self-auto"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Article
-                    </button>
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                        <button
+                            onClick={() => setImportDialogOpen(true)}
+                            className="inline-flex items-center gap-2 bg-white text-foreground border border-border px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-section-bg transition-colors shadow-sm"
+                        >
+                            <FileText className="w-4 h-4" />
+                            Import from Doc
+                        </button>
+                        <button
+                            onClick={openCreateDialog}
+                            className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New Article
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters Row */}
@@ -1061,6 +1073,13 @@ export default function AdminArticlesPage() {
                         </Dialog.Content>
                     </Dialog.Portal>
                 </Dialog.Root>
+
+                {/* Document Import Dialog */}
+                <DocumentImportDialog
+                    open={importDialogOpen}
+                    onOpenChange={setImportDialogOpen}
+                    onCreated={(article) => setArticlesList((prev) => [article, ...prev])}
+                />
             </div>
         </div>
     );
