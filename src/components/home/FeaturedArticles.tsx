@@ -46,7 +46,7 @@ export default function FeaturedArticles({ articles, title = "Featured Articles"
                                 </button>
                             ))}
                             <Link
-                                href="/all-articles"
+                                href="/articles"
                                 className="text-xs sm:text-sm text-secondary/50 hover:text-primary transition-colors ml-2"
                             >
                                 see all &gt;

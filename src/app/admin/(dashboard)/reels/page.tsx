@@ -478,7 +478,7 @@ export default function AdminReelsPage() {
                                                 <td className="py-3 px-4">
                                                     <div className="flex items-center justify-end gap-1">
                                                         <Link
-                                                            href={`/all-reels`}
+                                                            href={`/reels`}
                                                             target="_blank"
                                                             className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-primary/10 hover:text-primary transition-colors"
                                                             title="View"

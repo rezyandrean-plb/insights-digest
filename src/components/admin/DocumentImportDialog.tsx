@@ -91,9 +91,31 @@ function parseHtml(html: string): ParsedDoc {
         return img ? img.src || img.getAttribute("src") || "" : "";
     };
 
+    // Determine the semantic heading level of an element:
+    //   - native h1–h6 tags
+    //   - Google Docs <p role="heading" aria-level="N"> format
+    // Returns 0 if the element is not a heading.
+    const headingLevel = (el: Element): number => {
+        const tag = el.tagName.toLowerCase();
+        const m = tag.match(/^h([1-6])$/);
+        if (m) return parseInt(m[1], 10);
+        if (el.getAttribute("role") === "heading") {
+            const level = parseInt(el.getAttribute("aria-level") ?? "0", 10);
+            if (level >= 1 && level <= 6) return level;
+        }
+        return 0;
+    };
+
+    const pushCurrentSection = () => {
+        if (current && current.paragraphs.length > 0) {
+            sections.push({ id: crypto.randomUUID(), ...current });
+            current = null;
+        }
+    };
+
     // Google Docs wraps all content in <b id="docs-internal-guid-...">
     // Use the GUID attribute to find it regardless of how many siblings exist (e.g. <style> tags)
-    let bodyEl: Element =
+    const bodyEl: Element =
         doc.querySelector('[id^="docs-internal-guid-"]') ??
         (doc.body.children.length === 1 && ["b", "span"].includes(doc.body.children[0].tagName.toLowerCase())
             ? doc.body.children[0]
@@ -103,37 +125,33 @@ function parseHtml(html: string): ParsedDoc {
         const tag = el.tagName.toLowerCase();
         const text = el.textContent?.trim() ?? "";
         const imgSrc = extractImg(el);
+        const hLevel = headingLevel(el);
 
         // Track first image for cover suggestion
         if (imgSrc && !suggestedCover) suggestedCover = imgSrc;
 
-        if (tag === "h1" && !title) {
+        if (hLevel === 1 && !title) {
+            // First H1 → article title
             title = text;
-        } else if (tag === "h2" || tag === "h3" || tag === "h4") {
-            if (current && current.paragraphs.length > 0) {
-                sections.push({ id: crypto.randomUUID(), ...current });
-            } else if (current && current.paragraphs.length === 0) {
+        } else if (hLevel === 1 || hLevel === 2 || hLevel === 3 || hLevel === 4) {
+            // H2/H3/H4 → section heading; subsequent H1s also become section headings
+            pushCurrentSection();
+            if (current && current.paragraphs.length === 0) {
                 current.heading = text;
-                continue;
+            } else {
+                current = { heading: text, paragraphs: [] };
             }
-            current = { heading: text, paragraphs: [] };
         } else if (tag === "img" || (imgSrc && !text)) {
             // Standalone image — attach to current section
             if (current && !current.image) current.image = imgSrc;
-            else if (!current) {
-                // Image before any section — skip for cover only (already tracked above)
-            }
         } else if (tag === "p" || tag === "div" || tag === "li" || tag === "figure") {
             if (!current) current = { heading: "", paragraphs: [] };
             if (text) current.paragraphs.push(text);
-            // Image inside paragraph/figure → attach to section if not set yet
             if (imgSrc && !current.image) current.image = imgSrc;
         }
     }
 
-    if (current && current.paragraphs.length > 0) {
-        sections.push({ id: crypto.randomUUID(), ...current });
-    }
+    pushCurrentSection();
 
     const excerpt = sections[0]?.paragraphs[0] ?? "";
     return { title, excerpt, sections, suggestedCover };

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { articles } from "@/lib/data";
-import type { ArticleCategory } from "@/lib/data";
+import { ChevronLeft, ChevronRight, ArrowRight, Loader2 } from "lucide-react";
+import type { Article, ArticleCategory } from "@/lib/data";
 import ScrollReveal from "@/components/ScrollReveal";
 import Newsletter from "@/components/Newsletter";
 
@@ -17,20 +16,29 @@ type CategoryArticlesPageProps = {
 };
 
 export default function CategoryArticlesPage({ category, title }: CategoryArticlesPageProps) {
+    const [articlesList, setArticlesList] = useState<Article[]>([]);
+    const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
 
-    const filteredArticles = useMemo(
-        () => articles.filter((a) => a.category === category),
-        [category]
-    );
+    useEffect(() => {
+        const encoded = encodeURIComponent(category);
+        fetch(`/api/articles?category=${encoded}`)
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to fetch");
+                return res.json();
+            })
+            .then((data: Article[]) => setArticlesList(Array.isArray(data) ? data : []))
+            .catch(() => setArticlesList([]))
+            .finally(() => setLoading(false));
+    }, [category]);
 
-    const totalPages = Math.ceil(filteredArticles.length / ARTICLES_PER_PAGE);
-    const paginatedArticles = filteredArticles.slice(
+    const totalPages = Math.ceil(articlesList.length / ARTICLES_PER_PAGE);
+    const paginatedArticles = articlesList.slice(
         (currentPage - 1) * ARTICLES_PER_PAGE,
         currentPage * ARTICLES_PER_PAGE
     );
 
-    const heroArticle = filteredArticles[0];
+    const heroArticle = articlesList[0] ?? null;
 
     const pageNumbers = useMemo(() => {
         const pages: (number | "...")[] = [];
@@ -48,6 +56,15 @@ export default function CategoryArticlesPage({ category, title }: CategoryArticl
         return pages;
     }, [currentPage, totalPages]);
 
+    if (loading) {
+        return (
+            <div className="min-h-[50vh] flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <p className="text-secondary/70 text-sm mt-4">Loading…</p>
+            </div>
+        );
+    }
+
     return (
         <>
             {/* Hero Banner */}
@@ -55,11 +72,15 @@ export default function CategoryArticlesPage({ category, title }: CategoryArticl
                 <div className="relative h-[360px] sm:h-[420px] lg:h-[480px] overflow-hidden">
                     {heroArticle ? (
                         <>
-                            <img
-                                src={heroArticle.image}
-                                alt={heroArticle.title}
-                                className="w-full h-full object-cover"
-                            />
+                            {heroArticle.image ? (
+                                <img
+                                    src={heroArticle.image}
+                                    alt={`Cover image for ${heroArticle.title}`}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-secondary/10" />
+                            )}
                             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/20" />
                             <div className="absolute inset-0 flex items-center">
                                 <div className="container-custom">
@@ -70,9 +91,11 @@ export default function CategoryArticlesPage({ category, title }: CategoryArticl
                                         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight font-[var(--font-poppins)]">
                                             {heroArticle.title}
                                         </h1>
-                                        <p className="text-sm sm:text-base text-white/70 mt-3 leading-relaxed line-clamp-2">
-                                            {heroArticle.excerpt}
-                                        </p>
+                                        {heroArticle.excerpt && (
+                                            <p className="text-sm sm:text-base text-white/70 mt-3 leading-relaxed line-clamp-2">
+                                                {heroArticle.excerpt}
+                                            </p>
+                                        )}
                                         <Link
                                             href={`/article/${heroArticle.slug}`}
                                             className="inline-flex items-center gap-2 mt-5 text-white font-medium text-sm hover:text-primary-light transition-colors group"
@@ -111,7 +134,7 @@ export default function CategoryArticlesPage({ category, title }: CategoryArticl
                                 {title}
                             </h2>
                             <Link
-                                href="/all-articles"
+                                href="/articles"
                                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors group shrink-0"
                             >
                                 Read All Articles
@@ -140,11 +163,15 @@ export default function CategoryArticlesPage({ category, title }: CategoryArticl
                                         transition={{ duration: 0.2 }}
                                     >
                                         <div className="relative aspect-square rounded-2xl overflow-hidden mb-4">
-                                            <img
-                                                src={article.image}
-                                                alt={article.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
+                                            {article.image ? (
+                                                <img
+                                                    src={article.image}
+                                                    alt={`Cover image for ${article.title}`}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-secondary/10" aria-hidden />
+                                            )}
                                         </div>
                                         <h3 className="text-base font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                             {article.title}

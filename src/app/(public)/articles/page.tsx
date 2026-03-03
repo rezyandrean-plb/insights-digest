@@ -3,9 +3,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { articles, trendingTopics } from "@/lib/data";
-import type { ArticleCategory } from "@/lib/data";
+import { ChevronLeft, ChevronRight, ArrowRight, Loader2 } from "lucide-react";
+import type { Article, ArticleCategory } from "@/lib/data";
 
 import ScrollReveal from "@/components/ScrollReveal";
 import Newsletter from "@/components/Newsletter";
@@ -21,24 +20,45 @@ const filterTabs: { label: string; value: ArticleCategory | "All" }[] = [
 ];
 
 const ARTICLES_PER_PAGE = 9;
+const TRENDING_FROM_ARTICLES = 8;
 
-export default function AllArticlesPage() {
+export default function ArticlesPage() {
+    const [articlesList, setArticlesList] = useState<Article[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<ArticleCategory | "All">("All");
     const [currentPage, setCurrentPage] = useState(1);
     const trendingScrollRef = useRef<HTMLDivElement>(null);
     const [activeDot, setActiveDot] = useState(0);
+
+    useEffect(() => {
+        fetch("/api/articles")
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to fetch");
+                return res.json();
+            })
+            .then((data: Article[]) => setArticlesList(Array.isArray(data) ? data : []))
+            .catch(() => setArticlesList([]))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const heroArticle = articlesList[0] ?? null;
+
+    const trendingTopics = useMemo(() => {
+        return articlesList
+            .filter((a) => a.image)
+            .slice(0, TRENDING_FROM_ARTICLES)
+            .map((a) => ({ id: a.id, label: a.title, image: a.image, slug: a.slug }));
+    }, [articlesList]);
 
     const CARD_WIDTH = 220;
     const CARD_GAP = 16;
     const VISIBLE_CARDS = 5;
     const totalDots = Math.max(1, trendingTopics.length - VISIBLE_CARDS + 1);
 
-    const heroArticle = articles[0];
-
     const filteredArticles = useMemo(() => {
-        if (activeFilter === "All") return articles;
-        return articles.filter((a) => a.category === activeFilter);
-    }, [activeFilter]);
+        if (activeFilter === "All") return articlesList;
+        return articlesList.filter((a) => a.category === activeFilter);
+    }, [articlesList, activeFilter]);
 
     const totalPages = Math.ceil(filteredArticles.length / ARTICLES_PER_PAGE);
     const paginatedArticles = filteredArticles.slice(
@@ -100,116 +120,135 @@ export default function AllArticlesPage() {
         });
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-[50vh] flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <p className="text-secondary/70 text-sm mt-4">Loading articles…</p>
+            </div>
+        );
+    }
+
     return (
         <>
             {/* Hero Banner */}
-            <section className="relative">
-                <div className="relative h-[360px] sm:h-[420px] lg:h-[480px] overflow-hidden">
-                    <img
-                        src={heroArticle.image}
-                        alt={heroArticle.title}
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/20" />
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="container-custom">
-                            <div className="max-w-xl">
-                                <span className="inline-block bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
-                                    LATEST NEWS
-                                </span>
-                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight font-[var(--font-poppins)]">
-                                    {heroArticle.title}
-                                </h1>
-                                <p className="text-sm sm:text-base text-white/70 mt-3 leading-relaxed line-clamp-2">
-                                    {heroArticle.excerpt}
-                                </p>
-                                <Link
-                                    href={`/article/${heroArticle.slug}`}
-                                    className="inline-flex items-center gap-2 mt-5 text-white font-medium text-sm hover:text-primary-light transition-colors group"
-                                >
-                                    Read More
-                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Trending Topics */}
-            <section className="py-10 sm:py-12 lg:py-14">
-                <div className="container-custom">
-                    <ScrollReveal>
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl sm:text-2xl font-bold text-secondary font-[var(--font-poppins)]">
-                                Trending Topics
-                            </h2>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => scrollTrending("left")}
-                                    className="w-8 h-8 rounded-full border border-secondary/20 flex items-center justify-center text-secondary/60 hover:bg-primary/10 transition-colors"
-                                    aria-label="Scroll left"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => scrollTrending("right")}
-                                    className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
-                                    aria-label="Scroll right"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    </ScrollReveal>
-
-                    <div
-                        ref={trendingScrollRef}
-                        className="flex gap-4 overflow-x-auto featured-scroll pb-2 -mx-1 px-1"
-                    >
-                        {trendingTopics.map((topic) => (
-                            <Link
-                                key={topic.id}
-                                href="#"
-                                className="group shrink-0 w-[200px] sm:w-[220px]"
-                            >
-                                <motion.div
-                                    whileHover={{ y: -4 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <div className="relative aspect-square rounded-2xl overflow-hidden">
-                                        <img
-                                            src={topic.image}
-                                            alt={topic.label}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                        <span className="absolute bottom-3 left-3 right-3 text-white text-sm font-semibold leading-snug">
-                                            {topic.label}
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            </Link>
-                        ))}
-                    </div>
-
-                    {/* Dot indicators */}
-                    <div className="flex items-center justify-center gap-2 mt-5">
-                        {Array.from({ length: totalDots }).map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => scrollToTrendingDot(i)}
-                                className={`rounded-full transition-all duration-300 ${
-                                    activeDot === i
-                                        ? "w-6 h-2 bg-primary"
-                                        : "w-2 h-2 bg-secondary/20 hover:bg-secondary/40"
-                                }`}
-                                aria-label={`Go to slide ${i + 1}`}
+            {heroArticle && (
+                <section className="relative">
+                    <div className="relative h-[360px] sm:h-[420px] lg:h-[480px] overflow-hidden">
+                        {heroArticle.image ? (
+                            <img
+                                src={heroArticle.image}
+                                alt={`Cover image for ${heroArticle.title}`}
+                                className="w-full h-full object-cover"
                             />
-                        ))}
+                        ) : (
+                            <div className="w-full h-full bg-secondary/10" />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/20" />
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="container-custom">
+                                <div className="max-w-xl">
+                                    <span className="inline-block bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                                        LATEST NEWS
+                                    </span>
+                                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight font-[var(--font-poppins)]">
+                                        {heroArticle.title}
+                                    </h1>
+                                    {heroArticle.excerpt && (
+                                        <p className="text-sm sm:text-base text-white/70 mt-3 leading-relaxed line-clamp-2">
+                                            {heroArticle.excerpt}
+                                        </p>
+                                    )}
+                                    <Link
+                                        href={`/article/${heroArticle.slug}`}
+                                        className="inline-flex items-center gap-2 mt-5 text-white font-medium text-sm hover:text-primary-light transition-colors group"
+                                    >
+                                        Read More
+                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
+
+            {/* Trending Topics — derived from articles with images */}
+            {trendingTopics.length > 0 && (
+                <section className="py-10 sm:py-12 lg:py-14">
+                    <div className="container-custom">
+                        <ScrollReveal>
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl sm:text-2xl font-bold text-secondary font-[var(--font-poppins)]">
+                                    Trending Topics
+                                </h2>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => scrollTrending("left")}
+                                        className="w-8 h-8 rounded-full border border-secondary/20 flex items-center justify-center text-secondary/60 hover:bg-primary/10 transition-colors"
+                                        aria-label="Scroll left"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => scrollTrending("right")}
+                                        className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
+                                        aria-label="Scroll right"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </ScrollReveal>
+
+                        <div
+                            ref={trendingScrollRef}
+                            className="flex gap-4 overflow-x-auto featured-scroll pb-2 -mx-1 px-1"
+                        >
+                            {trendingTopics.map((topic) => (
+                                <Link
+                                    key={topic.id}
+                                    href={`/article/${topic.slug}`}
+                                    className="group shrink-0 w-[200px] sm:w-[220px]"
+                                >
+                                    <motion.div
+                                        whileHover={{ y: -4 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <div className="relative aspect-square rounded-2xl overflow-hidden">
+                                            <img
+                                                src={topic.image}
+                                                alt={topic.label}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                            <span className="absolute bottom-3 left-3 right-3 text-white text-sm font-semibold leading-snug line-clamp-2">
+                                                {topic.label}
+                                            </span>
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            ))}
+                        </div>
+
+                        {/* Dot indicators */}
+                        <div className="flex items-center justify-center gap-2 mt-5">
+                            {Array.from({ length: totalDots }).map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => scrollToTrendingDot(i)}
+                                    className={`rounded-full transition-all duration-300 ${
+                                        activeDot === i
+                                            ? "w-6 h-2 bg-primary"
+                                            : "w-2 h-2 bg-secondary/20 hover:bg-secondary/40"
+                                    }`}
+                                    aria-label={`Go to slide ${i + 1}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* All Articles */}
             <section className="pb-10 sm:pb-14 lg:pb-16">
@@ -259,11 +298,15 @@ export default function AllArticlesPage() {
                                         transition={{ duration: 0.2 }}
                                     >
                                         <div className="relative aspect-square rounded-2xl overflow-hidden mb-4">
-                                            <img
-                                                src={article.image}
-                                                alt={article.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
+                                            {article.image ? (
+                                                <img
+                                                    src={article.image}
+                                                    alt={`Cover image for ${article.title}`}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-secondary/10" aria-hidden />
+                                            )}
                                         </div>
                                         <h3 className="text-base font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors">
                                             {article.title}
