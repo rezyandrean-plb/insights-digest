@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,9 +17,18 @@ import {
     Loader2,
     Check,
     AlertCircle,
-    PlusCircle,
+    UploadCloud,
     X,
+    Bold,
+    Italic,
+    Strikethrough,
+    List,
+    ListOrdered,
+    Undo2,
+    Redo2,
 } from "lucide-react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import type { ArticleSection } from "@/lib/data";
 
 function generateId() {
@@ -32,6 +41,180 @@ const emptySection = (): ArticleSection => ({
     paragraphs: [""],
     image: "",
 });
+
+function paragraphsToHtml(paragraphs: string[]): string {
+    if (!paragraphs.length) return "";
+    return paragraphs.map((p) => `<p>${p}</p>`).join("");
+}
+
+function htmlToParagraphs(html: string): string[] {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    const paras: string[] = [];
+    div.querySelectorAll("p").forEach((p) => {
+        const text = p.textContent?.trim();
+        if (text) paras.push(p.innerHTML);
+    });
+    return paras.length > 0 ? paras : [""];
+}
+
+function ToolbarBtn({ active, onClick, title, children }: {
+    active?: boolean; onClick: () => void; title: string; children: React.ReactNode;
+}) {
+    return (
+        <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+            title={title}
+            className={`w-7 h-7 flex items-center justify-center rounded text-xs font-bold transition-colors ${
+                active ? "bg-primary text-white" : "text-muted hover:bg-border/60 hover:text-foreground"
+            }`}
+        >
+            {children}
+        </button>
+    );
+}
+
+function RichTextEditor({ initialHtml, onChange }: { initialHtml: string; onChange: (html: string) => void }) {
+    const editor = useEditor({
+        extensions: [StarterKit],
+        content: initialHtml,
+        immediatelyRender: false,
+        onUpdate({ editor }) { onChange(editor.getHTML()); },
+        editorProps: { attributes: { class: "outline-none min-h-[120px] text-sm text-foreground" } },
+    });
+    if (!editor) return null;
+    return (
+        <div className="border border-border rounded-xl overflow-hidden">
+            <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border/50 bg-section-bg/40 flex-wrap">
+                <ToolbarBtn active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} title="Bold"><Bold className="w-3.5 h-3.5" /></ToolbarBtn>
+                <ToolbarBtn active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} title="Italic"><Italic className="w-3.5 h-3.5" /></ToolbarBtn>
+                <ToolbarBtn active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} title="Strikethrough"><Strikethrough className="w-3.5 h-3.5" /></ToolbarBtn>
+                <div className="w-px h-5 bg-border/60 mx-1" />
+                <ToolbarBtn active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Bullet list"><List className="w-3.5 h-3.5" /></ToolbarBtn>
+                <ToolbarBtn active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Ordered list"><ListOrdered className="w-3.5 h-3.5" /></ToolbarBtn>
+                <div className="w-px h-5 bg-border/60 mx-1" />
+                <ToolbarBtn active={false} onClick={() => editor.chain().focus().undo().run()} title="Undo"><Undo2 className="w-3.5 h-3.5" /></ToolbarBtn>
+                <ToolbarBtn active={false} onClick={() => editor.chain().focus().redo().run()} title="Redo"><Redo2 className="w-3.5 h-3.5" /></ToolbarBtn>
+            </div>
+            <EditorContent editor={editor}
+                className="p-3 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:mb-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_ol]:mb-2 [&_.ProseMirror_li]:mb-1 [&_.ProseMirror_strong]:font-bold [&_.ProseMirror_em]:italic [&_.ProseMirror_s]:line-through [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-primary/30 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic"
+            />
+        </div>
+    );
+}
+
+function SectionImageUploader({
+    image,
+    onUploaded,
+    onRemove,
+}: {
+    image?: string;
+    onUploaded: (url: string) => void;
+    onRemove: () => void;
+}) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+    const [dragOver, setDragOver] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    const upload = async (file: File) => {
+        setUploading(true);
+        setUploadError(null);
+        try {
+            const form = new FormData();
+            form.append("file", file);
+            const res = await fetch("/api/upload", { method: "POST", body: form });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? "Upload failed");
+            onUploaded(data.url);
+        } catch (e: unknown) {
+            setUploadError(e instanceof Error ? e.message : "Upload failed");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragOver(false);
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) upload(file);
+    };
+
+    return (
+        <div>
+            <input
+                ref={inputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) upload(f);
+                    e.target.value = "";
+                }}
+            />
+
+            {image ? (
+                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-border/50 group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={image} alt="Section" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => inputRef.current?.click()}
+                            disabled={uploading}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-foreground hover:bg-white/90 transition-colors"
+                        >
+                            <UploadCloud className="w-3.5 h-3.5" />
+                            Change
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onRemove}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-red-600 hover:bg-white/90 transition-colors"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <button
+                    type="button"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={uploading}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                    className={`w-full py-8 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 text-muted ${
+                        dragOver
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-border hover:border-primary/50 hover:bg-section-bg/40"
+                    }`}
+                >
+                    {uploading ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    ) : (
+                        <UploadCloud className="w-5 h-5" />
+                    )}
+                    <span className="text-xs">
+                        {uploading ? "Uploading…" : "Click or drag image here"}
+                    </span>
+                    <span className="text-[10px] text-muted/60">JPEG, PNG, WebP, GIF · Max 5 MB</span>
+                </button>
+            )}
+
+            {uploadError && (
+                <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {uploadError}
+                </p>
+            )}
+        </div>
+    );
+}
 
 export default function ArticleSectionsPage({
     params,
@@ -118,38 +301,10 @@ export default function ArticleSectionsPage({
             prev.map((s, i) => (i === idx ? { ...s, ...patch } : s))
         );
 
-    const addParagraph = (sIdx: number) =>
+    const updateParagraphsFromHtml = (sIdx: number, html: string) =>
         setSections((prev) =>
             prev.map((s, i) =>
-                i === sIdx
-                    ? { ...s, paragraphs: [...s.paragraphs, ""] }
-                    : s
-            )
-        );
-
-    const updateParagraph = (sIdx: number, pIdx: number, value: string) =>
-        setSections((prev) =>
-            prev.map((s, i) =>
-                i === sIdx
-                    ? {
-                          ...s,
-                          paragraphs: s.paragraphs.map((p, j) =>
-                              j === pIdx ? value : p
-                          ),
-                      }
-                    : s
-            )
-        );
-
-    const removeParagraph = (sIdx: number, pIdx: number) =>
-        setSections((prev) =>
-            prev.map((s, i) =>
-                i === sIdx
-                    ? {
-                          ...s,
-                          paragraphs: s.paragraphs.filter((_, j) => j !== pIdx),
-                      }
-                    : s
+                i === sIdx ? { ...s, paragraphs: htmlToParagraphs(html) } : s
             )
         );
 
@@ -281,80 +436,27 @@ export default function ArticleSectionsPage({
                                     <div>
                                         <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
                                             <ImageIcon className="w-3.5 h-3.5 text-primary" />
-                                            Image URL
+                                            Image
                                             <span className="normal-case font-normal text-muted ml-1">(optional)</span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={section.image ?? ""}
-                                            onChange={(e) =>
-                                                updateSection(sIdx, { image: e.target.value })
-                                            }
-                                            placeholder="https://…"
-                                            className="w-full px-3 py-2.5 text-sm rounded-lg border border-border bg-section-bg placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition font-mono"
+                                        <SectionImageUploader
+                                            image={section.image || undefined}
+                                            onUploaded={(url) => updateSection(sIdx, { image: url })}
+                                            onRemove={() => updateSection(sIdx, { image: "" })}
                                         />
-                                        {section.image && (
-                                            <div className="mt-2 relative w-full h-36 rounded-lg overflow-hidden border border-border/50 bg-section-bg">
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={section.image}
-                                                    alt="Section preview"
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = "none";
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
                                     </div>
 
-                                    {/* Paragraphs */}
+                                    {/* Content */}
                                     <div>
                                         <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider mb-2">
                                             <AlignLeft className="w-3.5 h-3.5 text-primary" />
-                                            Paragraphs
+                                            Content
                                         </label>
-                                        <div className="flex flex-col gap-2.5">
-                                            <AnimatePresence initial={false}>
-                                                {section.paragraphs.map((para, pIdx) => (
-                                                    <motion.div
-                                                        key={pIdx}
-                                                        initial={{ opacity: 0, y: 8 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.98 }}
-                                                        transition={{ duration: 0.15 }}
-                                                        className="relative group"
-                                                    >
-                                                        <textarea
-                                                            value={para}
-                                                            onChange={(e) =>
-                                                                updateParagraph(sIdx, pIdx, e.target.value)
-                                                            }
-                                                            placeholder={`Paragraph ${pIdx + 1}…`}
-                                                            rows={3}
-                                                            className="w-full px-3 py-2.5 pr-10 text-sm rounded-lg border border-border bg-section-bg placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition resize-none leading-relaxed"
-                                                        />
-                                                        {section.paragraphs.length > 1 && (
-                                                            <button
-                                                                onClick={() => removeParagraph(sIdx, pIdx)}
-                                                                className="absolute top-2 right-2 w-6 h-6 rounded-md flex items-center justify-center text-muted/40 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
-                                                                title="Remove paragraph"
-                                                            >
-                                                                <X className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </motion.div>
-                                                ))}
-                                            </AnimatePresence>
-
-                                            <button
-                                                onClick={() => addParagraph(sIdx)}
-                                                className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border text-xs text-muted hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
-                                            >
-                                                <PlusCircle className="w-3.5 h-3.5" />
-                                                Add paragraph
-                                            </button>
-                                        </div>
+                                        <RichTextEditor
+                                            key={section.id}
+                                            initialHtml={paragraphsToHtml(section.paragraphs)}
+                                            onChange={(html) => updateParagraphsFromHtml(sIdx, html)}
+                                        />
                                     </div>
                                 </div>
                             </motion.div>

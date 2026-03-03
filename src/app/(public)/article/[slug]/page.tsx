@@ -100,15 +100,21 @@ export default function ArticlePage() {
         <article className="pb-16 bg-[#F1EDEB]">
             <div className="container-custom pt-8 lg:pt-12">
                 {/* Title */}
-                <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-black leading-[125%] font-[var(--font-poppins)] max-w-2xl">
+                <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-black leading-[125%] font-[var(--font-poppins)]">
                     {article.title}
                 </h1>
 
                 {/* Meta line */}
                 <div className="flex items-center flex-wrap gap-0 mt-4 text-sm text-black">
-                    <span>Singapore&apos;s Coastal Property Frontier</span>
+                    <span className="font-medium">{article.category}</span>
                     <span className="mx-2">|</span>
                     <span>{article.date}</span>
+                    {article.readTime && (
+                        <>
+                            <span className="mx-2">|</span>
+                            <span>{article.readTime}</span>
+                        </>
+                    )}
                 </div>
 
                 {/* Two-column layout */}
@@ -116,25 +122,40 @@ export default function ArticlePage() {
                     {/* Left: Content */}
                     <div className="w-full lg:w-[65%]">
                         {/* Hero image */}
-                        <div className="rounded-2xl overflow-hidden mb-8">
-                            <img
-                                src={article.image}
-                                alt={article.title}
-                                className="w-full h-auto object-cover"
-                            />
-                        </div>
+                        {article.image && (
+                            <div className="rounded-2xl overflow-hidden mb-8">
+                                <img
+                                    src={article.image}
+                                    alt={`Cover image for ${article.title}`}
+                                    className="w-full h-auto object-cover"
+                                />
+                            </div>
+                        )}
 
                         {/* Lead paragraph */}
-                        <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-10">
-                            Yesterday, a team of analysts departed from the Keppel Bay Tower, embarking on a fact-finding mission to Sentosa Cove. HDB is set to introduce sustainable living concepts in Punggol Northshore with new eco-friendly housing projects.
-                        </p>
+                        {article.excerpt && (
+                            <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-10">
+                                {article.excerpt}
+                            </p>
+                        )}
 
                         {/* Sections */}
-                        {sections.map((section) => (
+                        {sections.map((section, sIdx) => (
                             <div key={section.id} id={section.id} className="mb-12 scroll-mt-24">
-                                <h2 className="text-xl sm:text-2xl font-bold text-black leading-snug mb-4 font-[var(--font-poppins)]">
-                                    {section.heading}
-                                </h2>
+                                {section.heading && (
+                                    <h2 className="text-xl sm:text-2xl font-bold text-black leading-snug mb-4 font-[var(--font-poppins)]">
+                                        {section.heading}
+                                    </h2>
+                                )}
+                                {section.image && (
+                                    <div className="rounded-2xl overflow-hidden mb-6">
+                                        <img
+                                            src={section.image}
+                                            alt={section.heading ? `${article.title} — ${section.heading}` : `${article.title} — Section ${sIdx + 1}`}
+                                            className="w-full h-auto object-cover"
+                                        />
+                                    </div>
+                                )}
                                 {section.paragraphs.map((p, i) =>
                                     p.trim().startsWith("<") ? (
                                         <div
@@ -147,15 +168,6 @@ export default function ArticlePage() {
                                             {p}
                                         </p>
                                     )
-                                )}
-                                {section.image && (
-                                    <div className="rounded-2xl overflow-hidden mt-6">
-                                        <img
-                                            src={section.image}
-                                            alt={section.heading}
-                                            className="w-full h-auto object-cover"
-                                        />
-                                    </div>
                                 )}
                             </div>
                         ))}
@@ -182,9 +194,12 @@ export default function ArticlePage() {
                             </div>
 
                             {/* TOC links */}
-                            {sections.length > 0 && (
+                            {sections.filter((s) => s.heading).length > 0 && (
                                 <nav className="flex flex-col gap-1.5 bg-[#195F60] rounded-xl p-4">
-                                    {sections.map((s) => (
+                                    <p className="text-xs font-semibold text-white/50 uppercase tracking-wider px-3 mb-1">
+                                        In this article
+                                    </p>
+                                    {sections.filter((s) => s.heading).map((s) => (
                                         <button
                                             key={s.id}
                                             onClick={() => {

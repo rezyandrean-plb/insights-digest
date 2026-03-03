@@ -8,7 +8,6 @@ import type { HomepageConfig } from "@/lib/homepage-config";
 import HeroSection from "@/components/home/HeroSection";
 import LatestPosts from "@/components/home/LatestPosts";
 import FeaturedStories from "@/components/home/FeaturedStories";
-import LatestNews from "@/components/home/LatestNews";
 import OurMethodology from "@/components/home/OurMethodology";
 import OurPodcast from "@/components/home/OurPodcast";
 import OurHomeTours from "@/components/home/OurHomeTours";
@@ -70,7 +69,6 @@ export default function HomePage() {
 
   const latestPosts = articles.slice(1, 1 + limits.latestPosts);
   const featuredArticles = articles.slice(3, 3 + limits.featuredStories);
-  const highlightArticle = articles[1] ?? articles[0];
   const reelsSlice = reelsList.slice(0, limits.reels);
   const newLaunchSlice = newLaunchItems.slice(0, limits.newLaunches);
   const webinarsSlice = webinars.slice(0, limits.webinars) as WebinarItem[];
@@ -88,14 +86,6 @@ export default function HomePage() {
       ) : null}
       {sections.featuredStories && featuredArticles.length > 0 ? (
         <FeaturedStories articles={featuredArticles} title={titles.featuredStories} />
-      ) : null}
-      {sections.latestNews && highlightArticle ? (
-        <LatestNews
-          article={highlightArticle}
-          reels={reelsSlice}
-          newLaunchItems={newLaunchSlice}
-          webinarItems={webinarsSlice}
-        />
       ) : null}
       {sections.ourMethodology ? (
         <OurMethodology

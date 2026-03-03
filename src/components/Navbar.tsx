@@ -21,11 +21,11 @@ const navLinks: NavLink[] = [
     { href: "/project-reviews", label: "Project Reviews", hasDropdown: false },
     { href: "/home-radar", label: "Home Radar", hasDropdown: false },
     {
-        href: "/all-reels",
+        href: "/reels",
         label: "Watch & Listen",
         hasDropdown: true,
         submenu: [
-            { href: "/all-reels", label: "Reels" },
+            { href: "/reels", label: "Reels" },
             { href: "/podcast", label: "Podcast" },
         ],
     },
@@ -58,7 +58,7 @@ export default function Navbar() {
         }
     }, [watchOpen]);
 
-    const isWatchActive = pathname === "/all-reels" || pathname === "/podcast";
+    const isWatchActive = pathname === "/reels" || pathname === "/podcast";
 
     return (
         <header className="sticky top-0 z-50 bg-[#195F60]">

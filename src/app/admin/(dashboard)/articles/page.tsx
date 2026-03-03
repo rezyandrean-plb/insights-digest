@@ -24,6 +24,7 @@ import {
     Calendar,
     Minus,
     FileText,
+    CheckSquare,
 } from "lucide-react";
 import type { Article, ArticleCategory } from "@/lib/data";
 import DocumentImportDialog from "@/components/admin/DocumentImportDialog";
@@ -119,6 +120,9 @@ export default function AdminArticlesPage() {
     const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
     const [heroCandidate, setHeroCandidate] = useState<Article | null>(null);
     const [formData, setFormData] = useState(emptyArticle);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
     const [imageUploading, setImageUploading] = useState(false);
     const [imageDragOver, setImageDragOver] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -360,6 +364,52 @@ export default function AdminArticlesPage() {
         }
     }, [heroCandidate, saving]);
 
+    const toggleSelectOne = useCallback((id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
+
+    const toggleSelectAllOnPage = useCallback(() => {
+        const pageIds = paginated.map((a) => a.id);
+        const allSelected = pageIds.every((id) => selectedIds.has(id));
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (allSelected) {
+                pageIds.forEach((id) => next.delete(id));
+            } else {
+                pageIds.forEach((id) => next.add(id));
+            }
+            return next;
+        });
+    }, [paginated, selectedIds]);
+
+    const clearSelection = useCallback(() => {
+        setSelectedIds(new Set());
+        setSelectMode(false);
+    }, []);
+
+    const handleBulkDelete = useCallback(async () => {
+        if (selectedIds.size === 0 || saving) return;
+        setSaving(true);
+        try {
+            const ids = Array.from(selectedIds).join(",");
+            const res = await fetch(`/api/articles?ids=${ids}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("Bulk delete failed");
+            setArticlesList((prev) => prev.filter((a) => !selectedIds.has(a.id)));
+            toast.success(`${selectedIds.size} article${selectedIds.size > 1 ? "s" : ""} deleted.`);
+            setSelectedIds(new Set());
+            setBulkDeleteDialogOpen(false);
+        } catch {
+            toast.error("Failed to delete selected articles.");
+        } finally {
+            setSaving(false);
+        }
+    }, [selectedIds, saving]);
+
     const updateField = <K extends keyof typeof formData>(
         key: K,
         value: (typeof formData)[K]
@@ -449,7 +499,57 @@ export default function AdminArticlesPage() {
                             </option>
                         ))}
                     </select>
+                    <button
+                        onClick={() => {
+                            if (selectMode) {
+                                clearSelection();
+                            } else {
+                                setSelectMode(true);
+                            }
+                        }}
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
+                            selectMode
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border bg-white text-foreground hover:bg-section-bg"
+                        }`}
+                    >
+                        <CheckSquare className="w-4 h-4" />
+                        {selectMode ? "Cancel" : "Select"}
+                    </button>
                 </div>
+
+                {/* Bulk action bar */}
+                <AnimatePresence>
+                    {selectedIds.size > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.18 }}
+                            className="flex items-center justify-between gap-3 mb-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-xl"
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <CheckSquare className="w-4 h-4 text-primary" />
+                                <span className="text-sm font-medium text-foreground">
+                                    {selectedIds.size} article{selectedIds.size > 1 ? "s" : ""} selected
+                                </span>
+                                <button
+                                    onClick={clearSelection}
+                                    className="text-xs text-muted hover:text-foreground transition-colors underline underline-offset-2"
+                                >
+                                    Clear
+                                </button>
+                            </div>
+                            <button
+                                onClick={() => setBulkDeleteDialogOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors shadow-sm"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Delete Selected
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Table */}
                 <div className="bg-white rounded-2xl border border-border/50 overflow-hidden shadow-sm">
@@ -457,6 +557,16 @@ export default function AdminArticlesPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border/50 bg-section-bg/50">
+                                    {selectMode && (
+                                        <th className="py-3.5 px-4 w-[44px]">
+                                            <input
+                                                type="checkbox"
+                                                checked={paginated.length > 0 && paginated.every((a) => selectedIds.has(a.id))}
+                                                onChange={toggleSelectAllOnPage}
+                                                className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 accent-primary cursor-pointer"
+                                            />
+                                        </th>
+                                    )}
                                     <th className="text-left py-3.5 px-4 font-semibold text-secondary w-[52px]">
                                         #
                                     </th>
@@ -488,7 +598,7 @@ export default function AdminArticlesPage() {
                                     {paginated.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={8}
+                                                colSpan={selectMode ? 9 : 8}
                                                 className="text-center py-16 text-muted"
                                             >
                                                 No articles found.
@@ -502,8 +612,20 @@ export default function AdminArticlesPage() {
                                                 animate={{ opacity: 1 }}
                                                 exit={{ opacity: 0 }}
                                                 transition={{ delay: idx * 0.03 }}
-                                                className="border-b border-border/30 last:border-0 hover:bg-section-bg/30 transition-colors"
+                                                className={`border-b border-border/30 last:border-0 transition-colors ${
+                                                    selectMode && selectedIds.has(article.id) ? "bg-primary/5" : "hover:bg-section-bg/30"
+                                                }`}
                                             >
+                                                {selectMode && (
+                                                    <td className="py-3 px-4">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedIds.has(article.id)}
+                                                            onChange={() => toggleSelectOne(article.id)}
+                                                            className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 accent-primary cursor-pointer"
+                                                        />
+                                                    </td>
+                                                )}
                                                 <td className="py-3 px-4 text-muted text-xs">
                                                     {(currentPage - 1) * ITEMS_PER_PAGE +
                                                         idx +
@@ -1024,6 +1146,44 @@ export default function AdminArticlesPage() {
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     )}
                                     Delete
+                                </button>
+                            </div>
+                        </Dialog.Content>
+                    </Dialog.Portal>
+                </Dialog.Root>
+
+                {/* Bulk Delete Confirmation Dialog */}
+                <Dialog.Root
+                    open={bulkDeleteDialogOpen}
+                    onOpenChange={setBulkDeleteDialogOpen}
+                >
+                    <Dialog.Portal>
+                        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
+                        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-md bg-white rounded-2xl shadow-xl p-6 sm:p-8 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95">
+                            <Dialog.Title className="text-lg font-bold text-foreground mb-2">
+                                Delete {selectedIds.size} Article{selectedIds.size > 1 ? "s" : ""}
+                            </Dialog.Title>
+                            <Dialog.Description className="text-sm text-muted leading-relaxed">
+                                Are you sure you want to delete{" "}
+                                <span className="font-medium text-foreground">
+                                    {selectedIds.size} selected article{selectedIds.size > 1 ? "s" : ""}
+                                </span>
+                                ? This action cannot be undone.
+                            </Dialog.Description>
+
+                            <div className="flex items-center justify-end gap-3 mt-8">
+                                <Dialog.Close className="px-5 py-2.5 rounded-xl text-sm font-medium text-muted border border-border hover:bg-section-bg transition-colors">
+                                    Cancel
+                                </Dialog.Close>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    disabled={saving}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 shadow-sm"
+                                >
+                                    {saving && (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    )}
+                                    Delete {selectedIds.size} Article{selectedIds.size > 1 ? "s" : ""}
                                 </button>
                             </div>
                         </Dialog.Content>

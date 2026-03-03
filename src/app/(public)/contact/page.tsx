@@ -122,7 +122,7 @@ export default function ContactPage() {
 
     return (
         <>
-            {/* Hero — background image from all-articles, same copy */}
+            {/* Hero — background image from articles, same copy */}
             <section className="relative py-16 sm:py-20 lg:py-28 overflow-hidden min-h-[320px] sm:min-h-[380px] lg:min-h-[420px]">
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -143,7 +143,7 @@ export default function ContactPage() {
                             We create real estate content people trust.
                         </p>
                         <Link
-                            href="/all-articles"
+                            href="/articles"
                             className="inline-flex items-center gap-2 mt-8 text-sm font-semibold text-white hover:text-white/90 transition-colors"
                         >
                             Explore our articles

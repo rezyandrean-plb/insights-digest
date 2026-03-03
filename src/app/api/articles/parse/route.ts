@@ -85,7 +85,18 @@ export async function POST(req: NextRequest) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const result = await mammoth.convertToHtml({ buffer });
+        const result = await mammoth.convertToHtml(
+            { buffer },
+            {
+                styleMap: [
+                    "p[style-name='Title'] => h1:fresh",
+                    "p[style-name='Subtitle'] => h2:fresh",
+                    "p[style-name='Heading 1'] => h1:fresh",
+                    "p[style-name='Heading 2'] => h2:fresh",
+                    "p[style-name='Heading 3'] => h3:fresh",
+                ],
+            }
+        );
 
         // Upload embedded base64 images to S3
         const html = await processHtmlImages(result.value);

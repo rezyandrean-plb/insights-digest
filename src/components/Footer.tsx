@@ -16,7 +16,7 @@ const exploreLinksLeft = [
 const exploreLinksRight = [
     { label: "Project Reviews", href: "/project-reviews" },
     { label: "Home Radar", href: "/home-radar" },
-    { label: "Reels", href: "/all-reels" },
+    { label: "Reels", href: "/reels" },
     { label: "Podcast", href: "/podcast" },
     { label: "Work With Us", href: "/contact" },
 ];
