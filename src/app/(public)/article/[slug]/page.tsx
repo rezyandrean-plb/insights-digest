@@ -182,13 +182,6 @@ export default function ArticlePage() {
                             </div>
                         )}
 
-                        {/* Lead paragraph */}
-                        {article.excerpt && (
-                            <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-10">
-                                {article.excerpt}
-                            </p>
-                        )}
-
                         {/* Sections */}
                         {sections.map((section, sIdx) => (
                             <div key={section.id} id={section.id} className="mb-12 scroll-mt-24">
