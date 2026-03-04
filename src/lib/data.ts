@@ -31,6 +31,7 @@ export interface Article {
     readTime: string;
     featured?: boolean;
     isHero?: boolean;
+    published?: boolean;
 }
 
 export const articles: Article[] = [

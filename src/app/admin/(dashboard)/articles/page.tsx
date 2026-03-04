@@ -13,6 +13,7 @@ import {
     X,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
     ArrowLeft,
     Star,
     Eye,
@@ -25,6 +26,8 @@ import {
     Minus,
     FileText,
     CheckSquare,
+    Globe,
+    EyeOff,
 } from "lucide-react";
 import type { Article, ArticleCategory } from "@/lib/data";
 import DocumentImportDialog from "@/components/admin/DocumentImportDialog";
@@ -126,6 +129,10 @@ export default function AdminArticlesPage() {
     const [imageUploading, setImageUploading] = useState(false);
     const [imageDragOver, setImageDragOver] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
+    const [editDropdownArticleId, setEditDropdownArticleId] = useState<string | null>(null);
+    const editDropdownRef = useRef<HTMLDivElement>(null);
+    const [statusDropdownArticleId, setStatusDropdownArticleId] = useState<string | null>(null);
+    const statusDropdownRef = useRef<HTMLDivElement>(null);
 
     const uploadImage = useCallback(async (file: File) => {
         setImageUploading(true);
@@ -147,7 +154,7 @@ export default function AdminArticlesPage() {
 
     const fetchArticles = useCallback(async () => {
         try {
-            const res = await fetch("/api/articles");
+            const res = await fetch("/api/articles?include_drafts=true");
             if (!res.ok) throw new Error("Failed to fetch");
             const data = await res.json();
             setArticlesList(data);
@@ -161,6 +168,21 @@ export default function AdminArticlesPage() {
     useEffect(() => {
         fetchArticles();
     }, [fetchArticles]);
+
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (editDropdownRef.current && !editDropdownRef.current.contains(e.target as Node)) {
+                setEditDropdownArticleId(null);
+            }
+            if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+                setStatusDropdownArticleId(null);
+            }
+        }
+        if (editDropdownArticleId || statusDropdownArticleId) {
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => document.removeEventListener("mousedown", handleClickOutside);
+        }
+    }, [editDropdownArticleId, statusDropdownArticleId]);
 
     const filtered = useMemo(() => {
         let result = articlesList;
@@ -228,7 +250,7 @@ export default function AdminArticlesPage() {
         setDeleteDialogOpen(true);
     }, []);
 
-    const handleSave = useCallback(async () => {
+    const handleSave = useCallback(async (published: boolean = true) => {
         if (!formData.title.trim() || !formData.slug.trim() || saving) return;
         setSaving(true);
 
@@ -237,7 +259,7 @@ export default function AdminArticlesPage() {
                 const res = await fetch("/api/articles", {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: editingArticle.id, ...formData }),
+                    body: JSON.stringify({ id: editingArticle.id, ...formData, published }),
                 });
                 if (!res.ok) throw new Error("Update failed");
                 const updated = await res.json();
@@ -249,12 +271,14 @@ export default function AdminArticlesPage() {
                 const res = await fetch("/api/articles", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(formData),
+                    body: JSON.stringify({ ...formData, published }),
                 });
                 if (!res.ok) throw new Error("Create failed");
                 const created = await res.json();
                 setArticlesList((prev) => [created, ...prev]);
-                toast.success("Article created successfully.");
+                toast.success(
+                    published ? "Article created and published." : "Article saved as draft."
+                );
             }
             setDialogOpen(false);
             setEditingArticle(null);
@@ -326,6 +350,34 @@ export default function AdminArticlesPage() {
                 );
             } catch {
                 toast.error("Failed to toggle featured status.");
+            }
+        },
+        []
+    );
+
+    const togglePublished = useCallback(
+        async (article: Article) => {
+            try {
+                const res = await fetch("/api/articles", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: article.id,
+                        published: !(article.published ?? true),
+                    }),
+                });
+                if (!res.ok) throw new Error("Toggle failed");
+                const updated = await res.json();
+                setArticlesList((prev) =>
+                    prev.map((a) => (a.id === article.id ? updated : a))
+                );
+                toast.success(
+                    updated.published
+                        ? `"${updated.title}" published.`
+                        : `"${updated.title}" unpublished (draft).`
+                );
+            } catch {
+                toast.error("Failed to toggle published status.");
             }
         },
         []
@@ -448,7 +500,8 @@ export default function AdminArticlesPage() {
                         </h1>
                         <p className="text-sm text-muted mt-1">
                             {articlesList.length} articles total &middot;{" "}
-                            {articlesList.filter((a) => a.featured).length} featured
+                            {articlesList.filter((a) => a.featured).length} featured &middot;{" "}
+                            {articlesList.filter((a) => !(a.published ?? true)).length} draft
                         </p>
                     </div>
                     <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -570,17 +623,20 @@ export default function AdminArticlesPage() {
                                     <th className="text-left py-3.5 px-4 font-semibold text-secondary w-[52px]">
                                         #
                                     </th>
-                                    <th className="text-left py-3.5 px-4 font-semibold text-secondary">
+                                    <th className="text-left py-3.5 px-4 font-semibold text-secondary max-w-[300px] w-[300px]">
                                         Article
                                     </th>
                                     <th className="text-left py-3.5 px-4 font-semibold text-secondary hidden md:table-cell">
                                         Category
                                     </th>
-                                    <th className="text-left py-3.5 px-4 font-semibold text-secondary hidden lg:table-cell">
+                                    <th className="text-left py-3.5 px-4 font-semibold text-secondary hidden lg:table-cell max-w-[100px] w-[100px]">
                                         Author
                                     </th>
                                     <th className="text-left py-3.5 px-4 font-semibold text-secondary hidden lg:table-cell">
                                         Date
+                                    </th>
+                                    <th className="text-center py-3.5 px-4 font-semibold text-secondary w-[90px]">
+                                        Status
                                     </th>
                                     <th className="text-center py-3.5 px-4 font-semibold text-secondary w-[80px]">
                                         Featured
@@ -598,7 +654,7 @@ export default function AdminArticlesPage() {
                                     {paginated.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={selectMode ? 9 : 8}
+                                                colSpan={selectMode ? 10 : 9}
                                                 className="text-center py-16 text-muted"
                                             >
                                                 No articles found.
@@ -631,8 +687,8 @@ export default function AdminArticlesPage() {
                                                         idx +
                                                         1}
                                                 </td>
-                                                <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-3">
+                                                <td className="py-3 px-4 max-w-[300px]">
+                                                    <div className="flex items-center gap-3 min-w-0">
                                                         <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-section-bg">
                                                             {article.image ? (
                                                                 <img
@@ -646,9 +702,9 @@ export default function AdminArticlesPage() {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-medium text-foreground truncate max-w-[250px] lg:max-w-[320px]">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <p className="text-sm font-medium text-foreground truncate">
                                                                     {article.title}
                                                                 </p>
                                                                 {article.isHero && (
@@ -658,7 +714,7 @@ export default function AdminArticlesPage() {
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <p className="text-xs text-muted truncate max-w-[280px] lg:max-w-[360px]">
+                                                            <p className="text-xs text-muted truncate">
                                                                 /{article.slug}
                                                             </p>
                                                         </div>
@@ -675,11 +731,92 @@ export default function AdminArticlesPage() {
                                                         {article.category}
                                                     </span>
                                                 </td>
-                                                <td className="py-3 px-4 text-muted hidden lg:table-cell">
-                                                    {article.author}
+                                                <td className="py-3 px-4 text-muted text-xs hidden lg:table-cell max-w-[100px]">
+                                                    <span className="block truncate" title={article.author}>
+                                                        {article.author}
+                                                    </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-muted text-xs hidden lg:table-cell whitespace-nowrap">
                                                     {article.date}
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <div
+                                                        className="relative inline-block"
+                                                        ref={statusDropdownArticleId === article.id ? statusDropdownRef : null}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setStatusDropdownArticleId((id) =>
+                                                                    id === article.id ? null : article.id
+                                                                )
+                                                            }
+                                                            className="inline-flex items-center justify-center"
+                                                            title={
+                                                                (article.published ?? true)
+                                                                    ? "Published — change status"
+                                                                    : "Draft — change status"
+                                                            }
+                                                            aria-expanded={statusDropdownArticleId === article.id}
+                                                            aria-haspopup="true"
+                                                        >
+                                                            {(article.published ?? true) ? (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                                                    <Globe className="w-3 h-3" />
+                                                                    Published
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                                                    <EyeOff className="w-3 h-3" />
+                                                                    Draft
+                                                                </span>
+                                                            )}
+                                                            <ChevronDown
+                                                                className={`w-3 h-3 ml-0.5 transition-transform ${
+                                                                    (article.published ?? true)
+                                                                        ? "text-emerald-700"
+                                                                        : "text-amber-700"
+                                                                } ${statusDropdownArticleId === article.id ? "rotate-180" : ""}`}
+                                                            />
+                                                        </button>
+                                                        <AnimatePresence>
+                                                            {statusDropdownArticleId === article.id && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0, y: -4 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    exit={{ opacity: 0, y: -4 }}
+                                                                    transition={{ duration: 0.15 }}
+                                                                    className="absolute left-1/2 top-full mt-1 z-20 min-w-[140px] py-1 rounded-lg border border-border/50 bg-white shadow-lg -translate-x-1/2"
+                                                                >
+                                                                    {(article.published ?? true) ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setStatusDropdownArticleId(null);
+                                                                                togglePublished(article);
+                                                                            }}
+                                                                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-sm text-secondary hover:bg-amber-50 hover:text-amber-700 transition-colors rounded-lg"
+                                                                        >
+                                                                            <EyeOff className="w-4 h-4 shrink-0" />
+                                                                            Unpublish
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setStatusDropdownArticleId(null);
+                                                                                togglePublished(article);
+                                                                            }}
+                                                                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-sm text-secondary hover:bg-emerald-50 hover:text-emerald-700 transition-colors rounded-lg"
+                                                                        >
+                                                                            <Globe className="w-4 h-4 shrink-0" />
+                                                                            Publish
+                                                                        </button>
+                                                                    )}
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <button
@@ -734,22 +871,62 @@ export default function AdminArticlesPage() {
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </Link>
-                                                        <Link
-                                                            href={`/admin/articles/${article.id}/sections`}
-                                                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-secondary/10 hover:text-secondary transition-colors"
-                                                            title="Edit Sections"
+                                                        <div
+                                                            className="relative"
+                                                            ref={editDropdownArticleId === article.id ? editDropdownRef : null}
                                                         >
-                                                            <LayoutList className="w-4 h-4" />
-                                                        </Link>
-                                                        <button
-                                                            onClick={() =>
-                                                                openEditDialog(article)
-                                                            }
-                                                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-primary/10 hover:text-primary transition-colors"
-                                                            title="Edit"
-                                                        >
-                                                            <Pencil className="w-4 h-4" />
-                                                        </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    setEditDropdownArticleId((id) =>
+                                                                        id === article.id ? null : article.id
+                                                                    )
+                                                                }
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-primary/10 hover:text-primary transition-colors"
+                                                                title="Edit"
+                                                                aria-expanded={editDropdownArticleId === article.id}
+                                                                aria-haspopup="true"
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                                <ChevronDown
+                                                                    className={`w-3.5 h-3.5 ml-0.5 transition-transform ${
+                                                                        editDropdownArticleId === article.id
+                                                                            ? "rotate-180"
+                                                                            : ""
+                                                                    }`}
+                                                                />
+                                                            </button>
+                                                            <AnimatePresence>
+                                                                {editDropdownArticleId === article.id && (
+                                                                    <motion.div
+                                                                        initial={{ opacity: 0, y: -4 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: -4 }}
+                                                                        transition={{ duration: 0.15 }}
+                                                                        className="absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-lg border border-border/50 bg-white shadow-lg"
+                                                                    >
+                                                                        <Link
+                                                                            href={`/admin/articles/${article.id}/sections`}
+                                                                            onClick={() => setEditDropdownArticleId(null)}
+                                                                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-sm text-secondary hover:bg-secondary/10 transition-colors first:rounded-t-lg"
+                                                                        >
+                                                                            <LayoutList className="w-4 h-4 shrink-0 text-muted" />
+                                                                            Edit Sections
+                                                                        </Link>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setEditDropdownArticleId(null);
+                                                                                openEditDialog(article);
+                                                                            }}
+                                                                            className="flex items-center gap-2.5 w-full px-3 py-2 text-left text-sm text-secondary hover:bg-primary/10 hover:text-primary transition-colors rounded-b-lg"
+                                                                        >
+                                                                            <Pencil className="w-4 h-4 shrink-0" />
+                                                                            Edit Article
+                                                                        </button>
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </div>
                                                         <button
                                                             onClick={() =>
                                                                 openDeleteDialog(article)
@@ -1095,8 +1272,25 @@ export default function AdminArticlesPage() {
                                 <Dialog.Close className="px-5 py-2.5 rounded-xl text-sm font-medium text-muted border border-border hover:bg-section-bg transition-colors">
                                     Cancel
                                 </Dialog.Close>
+                                {!editingArticle && (
+                                    <button
+                                        onClick={() => handleSave(false)}
+                                        disabled={
+                                            !formData.title.trim() ||
+                                            !formData.slug.trim() ||
+                                            saving
+                                        }
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-white text-foreground border border-border hover:bg-section-bg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        {saving && (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        )}
+                                        <EyeOff className="w-4 h-4" />
+                                        Save to Draft
+                                    </button>
+                                )}
                                 <button
-                                    onClick={handleSave}
+                                    onClick={() => handleSave(true)}
                                     disabled={
                                         !formData.title.trim() ||
                                         !formData.slug.trim() ||
@@ -1107,7 +1301,7 @@ export default function AdminArticlesPage() {
                                     {saving && (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     )}
-                                    {editingArticle ? "Save Changes" : "Create Article"}
+                                    {editingArticle ? "Save Changes" : "Publish Article"}
                                 </button>
                             </div>
                         </Dialog.Content>

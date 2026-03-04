@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
     try {
         const form = await req.formData();
         const file = form.get("file") as File | null;
+        const prefixOverride = form.get("prefix") as string | null;
+        const s3Prefix =
+            typeof prefixOverride === "string" && prefixOverride.trim()
+                ? prefixOverride.trim().replace(/^\/+|\/+$/g, "")
+                : PREFIX;
 
         if (!file) {
             return NextResponse.json({ error: "No file provided." }, { status: 400 });
@@ -41,7 +46,7 @@ export async function POST(req: NextRequest) {
 
         const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const filename = `${randomBytes(10).toString("hex")}.${ext}`;
-        const key = `${PREFIX}/${filename}`;
+        const key = `${s3Prefix}/${filename}`;
 
         const buffer = Buffer.from(await file.arrayBuffer());
 

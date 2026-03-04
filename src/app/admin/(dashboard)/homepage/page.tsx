@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowLeft, Loader2, AlertCircle, Layout, Type, Hash, List, Mic, Pencil, X, Trash2, Headphones } from "lucide-react";
+import { toast } from "sonner";
+import { ArrowLeft, Loader2, AlertCircle, Layout, Type, Hash, List, Mic, Pencil, X, Trash2, Headphones, UploadCloud } from "lucide-react";
 import {
     DEFAULT_HOMEPAGE_CONFIG,
     mergeWithDefault,
@@ -95,6 +96,28 @@ export default function AdminHomepagePage() {
     const [methodologyForm, setMethodologyForm] = useState<HomepageMethodologyItem>(emptyMethodologyItem("1"));
     const [podcastDialogOpen, setPodcastDialogOpen] = useState(false);
     const [podcastForm, setPodcastForm] = useState<HomepagePodcast>(DEFAULT_HOMEPAGE_CONFIG.podcast);
+    const [podcastThumbUploading, setPodcastThumbUploading] = useState(false);
+    const [podcastThumbDragOver, setPodcastThumbDragOver] = useState(false);
+    const podcastThumbInputRef = useRef<HTMLInputElement>(null);
+
+    const uploadPodcastThumbnail = useCallback(async (file: File) => {
+        setPodcastThumbUploading(true);
+        const toastId = toast.loading("Uploading thumbnail to S3…");
+        try {
+            const body = new FormData();
+            body.append("file", file);
+            body.append("prefix", "homepage/podcast");
+            const res = await fetch("/api/upload", { method: "POST", body });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? "Upload failed");
+            setPodcastForm((f) => ({ ...f, thumbnail: data.url }));
+            toast.success("Thumbnail uploaded.", { id: toastId });
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : "Thumbnail upload failed.", { id: toastId });
+        } finally {
+            setPodcastThumbUploading(false);
+        }
+    }, []);
     const [nuggetsDialogOpen, setNuggetsDialogOpen] = useState(false);
     const [editingNuggetIndex, setEditingNuggetIndex] = useState<number | null>(null);
     const [nuggetForm, setNuggetForm] = useState<HomepageNugget>(emptyNugget("1"));
@@ -205,9 +228,11 @@ export default function AdminHomepagePage() {
         setPodcastDialogOpen(true);
     };
 
-    const savePodcastFromDialog = () => {
-        setConfig((prev) => ({ ...prev, podcast: podcastForm }));
+    const savePodcastFromDialog = async () => {
+        const nextConfig = { ...config, podcast: podcastForm };
+        setConfig(nextConfig);
         setPodcastDialogOpen(false);
+        await handleSave(nextConfig);
     };
 
     const removeNuggetItem = (index: number) => {
@@ -631,61 +656,125 @@ export default function AdminHomepagePage() {
                                         <X className="w-4 h-4" />
                                     </Dialog.Close>
                                 </div>
-                                <div className="flex flex-col sm:flex-row sm:items-start gap-6">
-                                    <div className="sm:w-80 shrink-0">
-                                        <label className="block text-xs text-muted mb-1.5">Preview</label>
-                                        <div className="aspect-video rounded-lg border border-border/50 bg-muted/30 overflow-hidden">
-                                            <MethodologyImagePreview src={podcastForm.thumbnail} />
-                                        </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-muted mb-1">Thumbnail</label>
+                                        <input
+                                            ref={podcastThumbInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/gif"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) uploadPodcastThumbnail(file);
+                                                e.target.value = "";
+                                            }}
+                                        />
+                                        {podcastForm.thumbnail ? (
+                                            <div className="relative w-full h-28 rounded-lg overflow-hidden border border-border/50 group">
+                                                <img
+                                                    src={podcastForm.thumbnail}
+                                                    alt="Thumbnail preview"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => podcastThumbInputRef.current?.click()}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-foreground hover:bg-white/90 transition-colors"
+                                                    >
+                                                        <UploadCloud className="w-3.5 h-3.5" />
+                                                        Change
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPodcastForm((f) => ({ ...f, thumbnail: "" }))}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-red-600 hover:bg-white/90 transition-colors"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => !podcastThumbUploading && podcastThumbInputRef.current?.click()}
+                                                onDragOver={(e) => { e.preventDefault(); setPodcastThumbDragOver(true); }}
+                                                onDragLeave={() => setPodcastThumbDragOver(false)}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    setPodcastThumbDragOver(false);
+                                                    const file = e.dataTransfer.files?.[0];
+                                                    if (file) uploadPodcastThumbnail(file);
+                                                }}
+                                                disabled={podcastThumbUploading}
+                                                className={`w-full h-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer ${
+                                                    podcastThumbDragOver
+                                                        ? "border-primary bg-primary/5"
+                                                        : "border-border hover:border-primary/50 hover:bg-section-bg"
+                                                }`}
+                                            >
+                                                {podcastThumbUploading ? (
+                                                    <>
+                                                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                                        <span className="text-xs text-muted">Uploading…</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <UploadCloud className={`w-6 h-6 ${podcastThumbDragOver ? "text-primary" : "text-muted"}`} />
+                                                        <p className="text-sm font-medium text-foreground">
+                                                            {podcastThumbDragOver ? "Drop to upload" : "Click to upload"}
+                                                        </p>
+                                                        <p className="text-xs text-muted">or paste URL below</p>
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                        <input
+                                            type="text"
+                                            value={podcastForm.thumbnail}
+                                            onChange={(e) => setPodcastForm((f) => ({ ...f, thumbnail: e.target.value }))}
+                                            placeholder="Or paste thumbnail URL"
+                                            className="w-full mt-2 px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
                                     </div>
-                                    <div className="flex-1 min-w-0 space-y-4">
-                                        <div>
-                                            <label className="block text-xs text-muted mb-1">Label</label>
-                                            <input
-                                                type="text"
-                                                value={podcastForm.label}
-                                                onChange={(e) => setPodcastForm((f) => ({ ...f, label: e.target.value }))}
-                                                className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-muted mb-1">Title</label>
-                                            <input
-                                                type="text"
-                                                value={podcastForm.title}
-                                                onChange={(e) => setPodcastForm((f) => ({ ...f, title: e.target.value }))}
-                                                className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-muted mb-1">Description</label>
-                                            <textarea
-                                                value={podcastForm.description}
-                                                onChange={(e) => setPodcastForm((f) => ({ ...f, description: e.target.value }))}
-                                                rows={3}
-                                                className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs text-muted mb-1">Thumbnail URL</label>
-                                                <input
-                                                    type="text"
-                                                    value={podcastForm.thumbnail}
-                                                    onChange={(e) => setPodcastForm((f) => ({ ...f, thumbnail: e.target.value }))}
-                                                    className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs text-muted mb-1">Slug</label>
-                                                <input
-                                                    type="text"
-                                                    value={podcastForm.slug}
-                                                    onChange={(e) => setPodcastForm((f) => ({ ...f, slug: e.target.value }))}
-                                                    className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                                />
-                                            </div>
-                                        </div>
+                                    <div>
+                                        <label className="block text-xs text-muted mb-1">Label</label>
+                                        <input
+                                            type="text"
+                                            value={podcastForm.label}
+                                            onChange={(e) => setPodcastForm((f) => ({ ...f, label: e.target.value }))}
+                                            className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-muted mb-1">Title</label>
+                                        <input
+                                            type="text"
+                                            value={podcastForm.title}
+                                            onChange={(e) => setPodcastForm((f) => ({ ...f, title: e.target.value }))}
+                                            className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-muted mb-1">Description</label>
+                                        <textarea
+                                            value={podcastForm.description}
+                                            onChange={(e) => setPodcastForm((f) => ({ ...f, description: e.target.value }))}
+                                            rows={3}
+                                            className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-muted mb-1">Slug</label>
+                                        <input
+                                            type="text"
+                                            value={podcastForm.slug}
+                                            onChange={(e) => setPodcastForm((f) => ({ ...f, slug: e.target.value }))}
+                                            className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3 mt-8 pt-6 border-t border-border">

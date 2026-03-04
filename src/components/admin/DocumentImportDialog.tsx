@@ -488,7 +488,7 @@ export default function DocumentImportDialog({ open, onOpenChange, onCreated }: 
         }
     }, [uploadImage, parsedDoc]);
 
-    const handlePublish = useCallback(async () => {
+    const handleSaveArticle = useCallback(async (publish: boolean) => {
         if (!parsedDoc || saving) return;
         if (!parsedDoc.title.trim() || !metadata.slug.trim()) {
             toast.error("Title and slug are required."); return;
@@ -501,6 +501,7 @@ export default function DocumentImportDialog({ open, onOpenChange, onCreated }: 
                     title: parsedDoc.title, slug: metadata.slug, excerpt: parsedDoc.excerpt,
                     category: metadata.category, author: metadata.author, date: metadata.date,
                     readTime: metadata.readTime, image: metadata.image, featured: metadata.featured,
+                    published: publish,
                 }),
             });
             if (!createRes.ok) { const err = await createRes.json().catch(() => ({})); throw new Error(err.error ?? "Failed to create article"); }
@@ -512,12 +513,18 @@ export default function DocumentImportDialog({ open, onOpenChange, onCreated }: 
                 });
                 onCreated(patchRes.ok ? await patchRes.json() : created);
             } else { onCreated(created); }
-            toast.success(`"${parsedDoc.title}" published successfully.`);
+            toast.success(publish
+                ? `"${parsedDoc.title}" published successfully.`
+                : `"${parsedDoc.title}" saved as draft.`
+            );
             handleOpenChange(false);
         } catch (e: unknown) {
-            toast.error(e instanceof Error ? e.message : "Failed to publish article.");
+            toast.error(e instanceof Error ? e.message : "Failed to save article.");
         } finally { setSaving(false); }
     }, [parsedDoc, metadata, saving, onCreated, handleOpenChange]);
+
+    const handlePublish = useCallback(() => handleSaveArticle(true), [handleSaveArticle]);
+    const handleSaveDraft = useCallback(() => handleSaveArticle(false), [handleSaveArticle]);
 
     return (
         <Dialog.Root open={open} onOpenChange={handleOpenChange}>
@@ -565,7 +572,7 @@ export default function DocumentImportDialog({ open, onOpenChange, onCreated }: 
                             imageUploading={imageUploading} imageInputRef={imageInputRef}
                             onUploadCover={handleCoverUpload}
                             onUploadSectionImage={handleSectionImageUpload}
-                            saving={saving} onPublish={handlePublish}
+                            saving={saving} onPublish={handlePublish} onSaveDraft={handleSaveDraft}
                         />
                     )}
                 </Dialog.Content>
@@ -716,7 +723,7 @@ function ImportStep({
 function PreviewStep({
     parsedDoc, onUpdateDoc, previewMode, setPreviewMode,
     metadata, updateMeta, imageUploading, imageInputRef, onUploadCover,
-    onUploadSectionImage, saving, onPublish,
+    onUploadSectionImage, saving, onPublish, onSaveDraft,
 }: {
     parsedDoc: ParsedDoc;
     onUpdateDoc: (doc: ParsedDoc) => void;
@@ -730,6 +737,7 @@ function PreviewStep({
     onUploadSectionImage: (file: File, sectionId: string) => Promise<void>;
     saving: boolean;
     onPublish: () => void;
+    onSaveDraft: () => void;
 }) {
     const totalImages = parsedDoc.sections.filter(s => s.image).length + (metadata.image ? 1 : 0);
 
@@ -827,12 +835,20 @@ function PreviewStep({
                     <span className="font-medium text-foreground">{totalImages}</span> image{totalImages !== 1 ? "s" : ""}
                 </div>
 
-                <button onClick={onPublish} disabled={!parsedDoc.title.trim() || !metadata.slug.trim() || saving}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    {saving ? "Publishing…" : "Publish Article"}
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={onSaveDraft} disabled={!parsedDoc.title.trim() || !metadata.slug.trim() || saving}
+                        className="flex-1 inline-flex items-center justify-center gap-2 bg-white text-foreground border border-border px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-section-bg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                        Save to Draft
+                    </button>
+                    <button onClick={onPublish} disabled={!parsedDoc.title.trim() || !metadata.slug.trim() || saving}
+                        className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                        Publish
+                    </button>
+                </div>
             </div>
 
             {/* Right: Preview / Edit */}

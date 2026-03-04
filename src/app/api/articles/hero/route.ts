@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { articles } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export async function GET() {
     try {
         const [hero] = await db
             .select()
             .from(articles)
-            .where(eq(articles.isHero, true))
+            .where(and(eq(articles.isHero, true), eq(articles.published, true)))
             .limit(1);
 
         if (!hero) {
