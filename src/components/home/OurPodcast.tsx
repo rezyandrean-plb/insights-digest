@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Play } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Play, X } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import type { HomepagePodcast, HomepageNugget } from "@/lib/homepage-config";
+
+const SPOTIFY_EMBED_URL = "https://open.spotify.com/embed/show/3XFLamzyEFP5FzQwX9lcV0";
 
 const defaultPodcastData: HomepagePodcast = {
     label: "Latest Podcast",
@@ -68,6 +72,7 @@ interface OurPodcastProps {
 }
 
 export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: nuggetsTitleProp, nuggets: nuggetsProp, showNuggets = true }: OurPodcastProps) {
+    const [spotifyOpen, setSpotifyOpen] = useState(false);
     const podcastData = podcastProp ?? defaultPodcastData;
     const sectionLabel = title ?? podcastData.label;
     const nuggetsTitle = nuggetsTitleProp ?? "Listen";
@@ -75,33 +80,34 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
     return (
         <section className="py-0">
             <ScrollReveal>
-                <div className="flex flex-col-reverse lg:flex-row min-h-[280px] sm:min-h-[320px] overflow-hidden">
+                <div className="flex flex-col-reverse lg:flex-row min-h-[200px] sm:min-h-[240px] overflow-hidden">
                     {/* Left: dark teal content area */}
                     <div className="flex-1 bg-[#195F60] flex flex-col sm:flex-row gap-0 py-8 sm:py-10">
-                        <div className="sm:w-[35%] flex flex-col justify-center ml-0 pl-6 pr-6 sm:ml-6 sm:pl-8 sm:pr-8 lg:ml-[calc((100vw-1280px)/2+2rem)] border-l border-r border-white/15">
+                        <div className="sm:w-[28%] flex flex-col justify-center ml-0 pl-6 pr-6 sm:ml-6 sm:pl-8 sm:pr-8 lg:ml-[calc((100vw-1280px)/2+2rem)] border-l border-r border-white/15">
                             <span className="text-primary text-xs sm:text-sm font-medium tracking-wide">
                                 {sectionLabel}
                             </span>
-                            <h3 className="text-[20px] font-medium text-white leading-[125%] mt-3 font-[var(--font-poppins)] max-w-none sm:max-w-[220px]">
+                            <h3 className="text-[20px] font-medium text-white leading-[125%] mt-3 font-[var(--font-poppins)] max-w-none sm:max-w-[200px]">
                                 {podcastData.title}
                             </h3>
                         </div>
-                        <div className="sm:w-[65%] flex flex-col justify-center px-6 sm:px-8 lg:px-10 mt-6 sm:mt-0 border-r border-white/15">
-                            <p className="text-[14px] font-normal text-white/90 leading-[22px] font-[var(--font-poppins)] max-w-none sm:max-w-[280px]">
+                        <div className="sm:w-[72%] flex flex-col justify-center px-6 sm:px-8 lg:px-10 mt-6 sm:mt-0 border-r border-white/15">
+                            <p className="text-[14px] font-normal text-white/90 leading-[22px] font-[var(--font-poppins)] max-w-none sm:max-w-[400px]">
                                 {podcastData.description}
                             </p>
                         </div>
                     </div>
 
-                    {/* Right: video thumbnail */}
-                    <Link
-                        href={`#`}
-                        className="lg:w-[40%] shrink-0 relative group block"
+                    {/* Right: video thumbnail — play opens Spotify dialog */}
+                    <button
+                        type="button"
+                        onClick={() => setSpotifyOpen(true)}
+                        className="lg:w-[30%] shrink-0 relative group block text-left"
                     >
                         <img
                             src={podcastData.thumbnail}
                             alt={podcastData.title}
-                            className="w-full h-full object-cover min-h-[220px] sm:min-h-[280px] lg:min-h-0 group-hover:scale-105 transition-transform duration-500"
+                            className="w-full h-full object-cover min-h-[180px] sm:min-h-[220px] lg:min-h-0 group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -109,9 +115,36 @@ export default function OurPodcast({ title, podcast: podcastProp, nuggetsTitle: 
                                 <Play className="w-6 h-6 sm:w-7 sm:h-7 text-white fill-white ml-0.5" />
                             </div>
                         </div>
-                    </Link>
+                    </button>
                 </div>
             </ScrollReveal>
+
+            {/* Spotify embed dialog */}
+            <Dialog.Root open={spotifyOpen} onOpenChange={setSpotifyOpen}>
+                <Dialog.Portal>
+                    <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
+                    <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-2xl bg-[#121212] rounded-2xl shadow-2xl overflow-hidden data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                            <Dialog.Title className="text-sm font-medium text-white">
+                                Insights Digest — Listen on Spotify
+                            </Dialog.Title>
+                            <Dialog.Close className="rounded-lg p-2 text-white/70 hover:text-white hover:bg-white/10 transition-colors" aria-label="Close dialog">
+                                <X className="w-5 h-5" />
+                            </Dialog.Close>
+                        </div>
+                        <div className="aspect-[1.5] sm:aspect-[1.8] min-h-[320px]">
+                            <iframe
+                                src={SPOTIFY_EMBED_URL}
+                                title="Insights Digest on Spotify"
+                                className="w-full h-full"
+                                allowFullScreen
+                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                                loading="lazy"
+                            />
+                        </div>
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog.Root>
 
             {showNuggets && (
                 <>

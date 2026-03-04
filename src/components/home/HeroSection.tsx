@@ -21,7 +21,7 @@ export default function HeroSection({ article }: HeroSectionProps) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.7, delay: 0.1 }}
                     >
-                        <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4rem] font-bold text-white leading-[1.1] tracking-tight">
+                        <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] font-bold text-white leading-[1.1] tracking-tight">
                             {article.title}
                         </h1>
 
