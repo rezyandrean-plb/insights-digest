@@ -3,8 +3,43 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { articles as staticArticles } from "@/lib/data";
 import type { Article } from "@/lib/data";
+
+function ArticleSkeleton() {
+    return (
+        <div className="pb-16 bg-[#F1EDEB] animate-pulse">
+            <div className="container-custom pt-8 lg:pt-12">
+                <div className="h-9 sm:h-10 lg:h-[42px] bg-black/10 rounded w-full max-w-3xl" />
+                <div className="flex gap-2 mt-4 h-4 bg-black/10 rounded w-64" />
+                <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 mt-8">
+                    <div className="w-full lg:w-[65%] space-y-8">
+                        <div className="rounded-2xl overflow-hidden bg-black/10 aspect-video w-full" />
+                        <div className="space-y-3">
+                            <div className="h-4 bg-black/10 rounded w-full" />
+                            <div className="h-4 bg-black/10 rounded w-full" />
+                            <div className="h-4 bg-black/10 rounded w-4/5" />
+                        </div>
+                        <div className="space-y-6">
+                            <div className="h-6 bg-black/10 rounded w-48" />
+                            <div className="h-4 bg-black/10 rounded w-full" />
+                            <div className="h-4 bg-black/10 rounded w-full" />
+                            <div className="h-4 bg-black/10 rounded w-3/4" />
+                            <div className="h-6 bg-black/10 rounded w-40 mt-6" />
+                            <div className="h-4 bg-black/10 rounded w-full" />
+                            <div className="h-4 bg-black/10 rounded w-5/6" />
+                        </div>
+                    </div>
+                    <aside className="hidden lg:block w-[35%]">
+                        <div className="sticky top-28 pt-4">
+                            <div className="h-10 bg-[#195F60]/20 rounded-xl w-full" />
+                            <div className="mt-6 h-48 bg-[#195F60]/20 rounded-xl w-full" />
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const socialLinks = [
     { label: "Copy Link", href: "#", icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>` },
@@ -21,6 +56,8 @@ export default function ArticlePage() {
     const slug = params.slug as string;
     const [article, setArticle] = useState<Article | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [notFound, setNotFound] = useState(false);
     const [activeSection, setActiveSection] = useState<string>("");
 
     useEffect(() => {
@@ -30,25 +67,25 @@ export default function ArticlePage() {
         }
         let cancelled = false;
         setLoading(true);
+        setError(false);
+        setNotFound(false);
+        setArticle(null);
         fetch(`/api/articles?slug=${encodeURIComponent(slug)}`)
             .then((res) => {
-                if (!res.ok) return null;
+                if (cancelled) return null;
+                if (res.status === 404) {
+                    setNotFound(true);
+                    return null;
+                }
+                if (!res.ok) throw new Error("Failed to fetch");
                 return res.json();
             })
             .then((data) => {
                 if (cancelled) return;
-                if (data && data.slug) {
-                    setArticle(data as Article);
-                } else {
-                    const fromStatic = staticArticles.find((a) => a.slug === slug) ?? null;
-                    setArticle(fromStatic);
-                }
+                if (data && data.slug) setArticle(data as Article);
             })
             .catch(() => {
-                if (!cancelled) {
-                    const fromStatic = staticArticles.find((a) => a.slug === slug) ?? null;
-                    setArticle(fromStatic);
-                }
+                if (!cancelled) setError(true);
             })
             .finally(() => {
                 if (!cancelled) setLoading(false);
@@ -77,15 +114,28 @@ export default function ArticlePage() {
         return () => observer.disconnect();
     }, [sections]);
 
-    if (loading) {
+    if (loading) return <ArticleSkeleton />;
+
+    if (error) {
         return (
             <div className="container-custom py-20 text-center">
-                <p className="text-muted">Loading article…</p>
+                <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
+                <p className="text-muted mb-6">We couldn’t load this article. Please try again.</p>
+                <Link
+                    href={`/article/${slug}`}
+                    className="text-[#195F60] font-medium hover:underline"
+                >
+                    Try again
+                </Link>
+                <span className="mx-2 text-muted">|</span>
+                <Link href="/" className="text-[#195F60] font-medium hover:underline">
+                    Back to Home
+                </Link>
             </div>
         );
     }
 
-    if (!article) {
+    if (notFound || !article) {
         return (
             <div className="container-custom py-20 text-center">
                 <h1 className="text-2xl font-bold mb-4">Article not found</h1>
