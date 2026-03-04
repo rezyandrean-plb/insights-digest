@@ -14,6 +14,7 @@ import {
     TrendingUp,
     Loader2,
     ChevronRight,
+    Mail,
 } from "lucide-react";
 
 interface Counts {
@@ -21,6 +22,7 @@ interface Counts {
     reels: number | null;
     newLaunches: number | null;
     homeTours: number | null;
+    enquiries: number | null;
 }
 
 const NAV_SECTIONS = [
@@ -83,6 +85,18 @@ const NAV_SECTIONS = [
         countLabel: "tours",
     },
     {
+        icon: Mail,
+        title: "Enquiries",
+        description: "View and manage contact form submissions from the Work With Us page.",
+        href: "/admin/enquiries",
+        color: "text-accent",
+        bg: "bg-accent/10",
+        hoverBg: "group-hover:bg-accent/20",
+        accent: "border-l-accent",
+        countKey: "enquiries" as keyof Counts,
+        countLabel: "enquiries",
+    },
+    {
         icon: Settings,
         title: "Site Settings",
         description: "Configure site appearance, SEO metadata, and integrations.",
@@ -99,6 +113,7 @@ const STAT_CARDS = [
     { key: "reels" as keyof Counts, label: "Reels", icon: Film, color: "text-accent", bg: "bg-accent/10" },
     { key: "newLaunches" as keyof Counts, label: "New Launches", icon: Rocket, color: "text-primary", bg: "bg-primary/10" },
     { key: "homeTours" as keyof Counts, label: "Home Tours", icon: Home, color: "text-primary-dark", bg: "bg-primary/10" },
+    { key: "enquiries" as keyof Counts, label: "Enquiries", icon: Mail, color: "text-accent", bg: "bg-accent/10" },
 ];
 
 function getTodayLabel() {
@@ -116,6 +131,7 @@ export default function AdminPage() {
         reels: null,
         newLaunches: null,
         homeTours: null,
+        enquiries: null,
     });
     const [loading, setLoading] = useState(true);
 
@@ -125,12 +141,14 @@ export default function AdminPage() {
             fetch("/api/reels").then((r) => r.ok ? r.json() : []).catch(() => []),
             fetch("/api/new-launches").then((r) => r.ok ? r.json() : []).catch(() => []),
             fetch("/api/home-tours").then((r) => r.ok ? r.json() : []).catch(() => []),
-        ]).then(([articles, reels, newLaunches, homeTours]) => {
+            fetch("/api/admin/enquiries").then((r) => r.ok ? r.json() : []).catch(() => []),
+        ]).then(([articles, reels, newLaunches, homeTours, enquiries]) => {
             setCounts({
                 articles: Array.isArray(articles) ? articles.length : 0,
                 reels: Array.isArray(reels) ? reels.length : 0,
                 newLaunches: Array.isArray(newLaunches) ? newLaunches.length : 0,
                 homeTours: Array.isArray(homeTours) ? homeTours.length : 0,
+                enquiries: Array.isArray(enquiries) ? enquiries.length : 0,
             });
             setLoading(false);
         });
@@ -175,7 +193,7 @@ export default function AdminPage() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.08 }}
-                    className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10"
+                    className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-10"
                 >
                     {STAT_CARDS.map(({ key, label, icon: Icon, color, bg }) => (
                         <div

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { articles } from "@/db/schema";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 function mapRow(r: typeof articles.$inferSelect) {
     return {
@@ -18,6 +18,7 @@ function mapRow(r: typeof articles.$inferSelect) {
         readTime: r.readTime,
         featured: r.featured,
         isHero: r.isHero,
+        published: r.published,
     };
 }
 
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const slug = searchParams.get("slug");
         const category = searchParams.get("category");
+        const includeDrafts = searchParams.get("include_drafts") === "true";
 
         if (slug) {
             const [row] = await db
@@ -43,16 +45,21 @@ export async function GET(request: Request) {
             return NextResponse.json(mapRow(row));
         }
 
-        const rows = category?.trim()
-            ? await db
-                  .select()
-                  .from(articles)
-                  .where(eq(articles.category, category.trim()))
-                  .orderBy(desc(articles.isHero), desc(articles.id))
-            : await db
-                  .select()
-                  .from(articles)
-                  .orderBy(desc(articles.isHero), desc(articles.id));
+        const conditions = [];
+        if (!includeDrafts) conditions.push(eq(articles.published, true));
+        if (category?.trim()) conditions.push(eq(articles.category, category.trim()));
+
+        const rows =
+            conditions.length > 0
+                ? await db
+                      .select()
+                      .from(articles)
+                      .where(and(...conditions))
+                      .orderBy(desc(articles.isHero), desc(articles.id))
+                : await db
+                      .select()
+                      .from(articles)
+                      .orderBy(desc(articles.isHero), desc(articles.id));
 
         return NextResponse.json(rows.map(mapRow));
     } catch (error) {
@@ -82,6 +89,7 @@ export async function POST(request: Request) {
                 date: body.date || "",
                 readTime: body.readTime || "",
                 featured: body.featured ?? false,
+                published: body.published ?? true,
             })
             .returning();
 
@@ -120,6 +128,7 @@ export async function PUT(request: Request) {
         if (body.date !== undefined) patch.date = body.date;
         if (body.readTime !== undefined) patch.readTime = body.readTime;
         if (body.featured !== undefined) patch.featured = body.featured;
+        if (body.published !== undefined) patch.published = body.published;
 
         const [updated] = await db
             .update(articles)

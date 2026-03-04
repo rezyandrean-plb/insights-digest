@@ -9,8 +9,6 @@ import {
     Globe,
     FileText,
     Film,
-    Rocket,
-    Home,
     Settings,
     SlidersHorizontal,
     Menu,
@@ -19,15 +17,16 @@ import {
     CircleUser,
     LogOut,
     ChevronDown,
+    Mail,
 } from "lucide-react";
 
 const adminNav = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { href: "/admin/articles", label: "Articles", icon: FileText, exact: false },
     { href: "/admin/reels", label: "Reels", icon: Film, exact: false },
-    { href: "/admin/new-launches", label: "New Launches", icon: Rocket, exact: false },
-    { href: "/admin/home-tours", label: "Home Tours", icon: Home, exact: false },
 ];
+
+const enquiriesNav = { href: "/admin/enquiries", label: "Enquiries", icon: Mail, exact: false };
 
 const manageItems = [
     { href: "/admin/homepage", label: "Homepage", icon: Globe, description: "Manage homepage content & sections" },
@@ -170,7 +169,7 @@ export default function AdminHeader({ email }: { email: string }) {
                             </AnimatePresence>
                         </div>
 
-                        {/* Remaining nav items */}
+                        {/* Main nav links */}
                         {adminNav.slice(1).map((link) => {
                             const active = isActive(link.href, link.exact);
                             return (
@@ -188,6 +187,19 @@ export default function AdminHeader({ email }: { email: string }) {
                                 </Link>
                             );
                         })}
+
+                        {/* Enquiries */}
+                        <Link
+                            href={enquiriesNav.href}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                isActive(enquiriesNav.href, enquiriesNav.exact)
+                                    ? "bg-white/15 text-white"
+                                    : "text-white/60 hover:text-white hover:bg-white/8"
+                            }`}
+                        >
+                            <enquiriesNav.icon className="w-4 h-4" />
+                            {enquiriesNav.label}
+                        </Link>
                     </nav>
                 </div>
 
@@ -325,7 +337,7 @@ export default function AdminHeader({ email }: { email: string }) {
                                 })}
                             </div>
 
-                            {/* Remaining nav items */}
+                            {/* Main nav links */}
                             {adminNav.slice(1).map((link) => {
                                 const active = isActive(link.href, link.exact);
                                 return (
@@ -344,6 +356,19 @@ export default function AdminHeader({ email }: { email: string }) {
                                     </Link>
                                 );
                             })}
+
+                            <Link
+                                href={enquiriesNav.href}
+                                onClick={() => setMobileOpen(false)}
+                                className={`flex items-center gap-2.5 text-sm font-medium py-2.5 px-3 rounded-lg transition-colors ${
+                                    isActive(enquiriesNav.href, enquiriesNav.exact)
+                                        ? "bg-white/15 text-white"
+                                        : "text-white/60 hover:text-white hover:bg-white/8"
+                                }`}
+                            >
+                                <enquiriesNav.icon className="w-4 h-4" />
+                                {enquiriesNav.label}
+                            </Link>
 
                             <Link
                                 href="/"

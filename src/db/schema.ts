@@ -29,6 +29,7 @@ export const articles = pgTable("articles", {
     readTime: text("read_time").notNull().default(""),
     featured: boolean("featured").notNull().default(false),
     isHero: boolean("is_hero").notNull().default(false),
+    published: boolean("published").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
         .defaultNow()
@@ -83,6 +84,27 @@ export const adminUsers = pgTable("admin_users", {
     id: serial("id").primaryKey(),
     email: text("email").notNull().unique(),
     passwordHash: text("password_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+        .defaultNow()
+        .$onUpdate(() => new Date()),
+});
+
+export const enquiries = pgTable("enquiries", {
+    id: serial("id").primaryKey(),
+    enquiryAbout: text("enquiry_about").notNull(),
+    fullName: text("full_name").notNull(),
+    email: text("email").notNull(),
+    contactNumber: text("contact_number").default(""),
+    company: text("company").default(""),
+    inquiryContext: text("inquiry_context").default(""),
+    lookingToAchieve: text("looking_to_achieve").default(""),
+    projectTimeline: text("project_timeline").default(""),
+    estimatedBudget: text("estimated_budget").default(""),
+    stage: text("stage").default(""),
+    propertyType: text("property_type").default(""),
+    describeSituation: text("describe_situation").default(""),
+    status: text("status").notNull().default("new"), // new | read | replied | archived
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
         .defaultNow()

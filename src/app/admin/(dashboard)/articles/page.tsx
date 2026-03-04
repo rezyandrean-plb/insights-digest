@@ -25,6 +25,8 @@ import {
     Minus,
     FileText,
     CheckSquare,
+    Globe,
+    EyeOff,
 } from "lucide-react";
 import type { Article, ArticleCategory } from "@/lib/data";
 import DocumentImportDialog from "@/components/admin/DocumentImportDialog";
@@ -147,7 +149,7 @@ export default function AdminArticlesPage() {
 
     const fetchArticles = useCallback(async () => {
         try {
-            const res = await fetch("/api/articles");
+            const res = await fetch("/api/articles?include_drafts=true");
             if (!res.ok) throw new Error("Failed to fetch");
             const data = await res.json();
             setArticlesList(data);
@@ -228,7 +230,7 @@ export default function AdminArticlesPage() {
         setDeleteDialogOpen(true);
     }, []);
 
-    const handleSave = useCallback(async () => {
+    const handleSave = useCallback(async (published: boolean = true) => {
         if (!formData.title.trim() || !formData.slug.trim() || saving) return;
         setSaving(true);
 
@@ -237,7 +239,7 @@ export default function AdminArticlesPage() {
                 const res = await fetch("/api/articles", {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: editingArticle.id, ...formData }),
+                    body: JSON.stringify({ id: editingArticle.id, ...formData, published }),
                 });
                 if (!res.ok) throw new Error("Update failed");
                 const updated = await res.json();
@@ -249,12 +251,14 @@ export default function AdminArticlesPage() {
                 const res = await fetch("/api/articles", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(formData),
+                    body: JSON.stringify({ ...formData, published }),
                 });
                 if (!res.ok) throw new Error("Create failed");
                 const created = await res.json();
                 setArticlesList((prev) => [created, ...prev]);
-                toast.success("Article created successfully.");
+                toast.success(
+                    published ? "Article created and published." : "Article saved as draft."
+                );
             }
             setDialogOpen(false);
             setEditingArticle(null);
@@ -326,6 +330,34 @@ export default function AdminArticlesPage() {
                 );
             } catch {
                 toast.error("Failed to toggle featured status.");
+            }
+        },
+        []
+    );
+
+    const togglePublished = useCallback(
+        async (article: Article) => {
+            try {
+                const res = await fetch("/api/articles", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: article.id,
+                        published: !(article.published ?? true),
+                    }),
+                });
+                if (!res.ok) throw new Error("Toggle failed");
+                const updated = await res.json();
+                setArticlesList((prev) =>
+                    prev.map((a) => (a.id === article.id ? updated : a))
+                );
+                toast.success(
+                    updated.published
+                        ? `"${updated.title}" published.`
+                        : `"${updated.title}" unpublished (draft).`
+                );
+            } catch {
+                toast.error("Failed to toggle published status.");
             }
         },
         []
@@ -448,7 +480,8 @@ export default function AdminArticlesPage() {
                         </h1>
                         <p className="text-sm text-muted mt-1">
                             {articlesList.length} articles total &middot;{" "}
-                            {articlesList.filter((a) => a.featured).length} featured
+                            {articlesList.filter((a) => a.featured).length} featured &middot;{" "}
+                            {articlesList.filter((a) => !(a.published ?? true)).length} draft
                         </p>
                     </div>
                     <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -582,6 +615,9 @@ export default function AdminArticlesPage() {
                                     <th className="text-left py-3.5 px-4 font-semibold text-secondary hidden lg:table-cell">
                                         Date
                                     </th>
+                                    <th className="text-center py-3.5 px-4 font-semibold text-secondary w-[90px]">
+                                        Status
+                                    </th>
                                     <th className="text-center py-3.5 px-4 font-semibold text-secondary w-[80px]">
                                         Featured
                                     </th>
@@ -598,7 +634,7 @@ export default function AdminArticlesPage() {
                                     {paginated.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={selectMode ? 9 : 8}
+                                                colSpan={selectMode ? 10 : 9}
                                                 className="text-center py-16 text-muted"
                                             >
                                                 No articles found.
@@ -680,6 +716,31 @@ export default function AdminArticlesPage() {
                                                 </td>
                                                 <td className="py-3 px-4 text-muted text-xs hidden lg:table-cell whitespace-nowrap">
                                                     {article.date}
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <button
+                                                        onClick={() =>
+                                                            togglePublished(article)
+                                                        }
+                                                        className="inline-flex items-center justify-center"
+                                                        title={
+                                                            (article.published ?? true)
+                                                                ? "Published — click to unpublish"
+                                                                : "Draft — click to publish"
+                                                        }
+                                                    >
+                                                        {(article.published ?? true) ? (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                                                <Globe className="w-3 h-3" />
+                                                                Live
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                                                <EyeOff className="w-3 h-3" />
+                                                                Draft
+                                                            </span>
+                                                        )}
+                                                    </button>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <button
@@ -1095,8 +1156,25 @@ export default function AdminArticlesPage() {
                                 <Dialog.Close className="px-5 py-2.5 rounded-xl text-sm font-medium text-muted border border-border hover:bg-section-bg transition-colors">
                                     Cancel
                                 </Dialog.Close>
+                                {!editingArticle && (
+                                    <button
+                                        onClick={() => handleSave(false)}
+                                        disabled={
+                                            !formData.title.trim() ||
+                                            !formData.slug.trim() ||
+                                            saving
+                                        }
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-white text-foreground border border-border hover:bg-section-bg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        {saving && (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        )}
+                                        <EyeOff className="w-4 h-4" />
+                                        Save to Draft
+                                    </button>
+                                )}
                                 <button
-                                    onClick={handleSave}
+                                    onClick={() => handleSave(true)}
                                     disabled={
                                         !formData.title.trim() ||
                                         !formData.slug.trim() ||
@@ -1107,7 +1185,7 @@ export default function AdminArticlesPage() {
                                     {saving && (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     )}
-                                    {editingArticle ? "Save Changes" : "Create Article"}
+                                    {editingArticle ? "Save Changes" : "Publish Article"}
                                 </button>
                             </div>
                         </Dialog.Content>

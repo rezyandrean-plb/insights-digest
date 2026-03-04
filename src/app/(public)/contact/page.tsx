@@ -107,14 +107,55 @@ export default function ContactPage() {
         describeSituation: "",
     });
 
+    const [submitStatus, setSubmitStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+    const [submitMessage, setSubmitMessage] = useState("");
+
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        if (submitStatus !== "idle") setSubmitStatus("idle");
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitStatus("sending");
+        setSubmitMessage("");
+        try {
+            const res = await fetch("/api/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    enquiryAbout,
+                    ...formData,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setSubmitStatus("error");
+                setSubmitMessage(data.error || "Something went wrong. Please try again.");
+                return;
+            }
+            setSubmitStatus("success");
+            setSubmitMessage("Thank you. Your enquiry has been sent and we’ll get back to you soon.");
+            setEnquiryAbout("");
+            setFormData({
+                fullName: "",
+                email: "",
+                contactNumber: "",
+                company: "",
+                inquiryContext: "",
+                lookingToAchieve: "",
+                projectTimeline: "",
+                estimatedBudget: "",
+                stage: "",
+                propertyType: "",
+                describeSituation: "",
+            });
+        } catch {
+            setSubmitStatus("error");
+            setSubmitMessage("Network error. Please check your connection and try again.");
+        }
     };
 
     const isBrand = enquiryAbout === "Brand / Media Collaboration";
@@ -440,11 +481,26 @@ export default function ContactPage() {
                                         </motion.div>
                                     )}
 
+                                    {submitMessage && (
+                                        <p
+                                            role="alert"
+                                            className={`text-sm py-3 px-4 rounded-xl ${
+                                                submitStatus === "success"
+                                                    ? "bg-[#195F60]/10 text-[#195F60] border border-[#195F60]/20"
+                                                    : submitStatus === "error"
+                                                      ? "bg-red-50 text-red-700 border border-red-200"
+                                                      : ""
+                                            }`}
+                                        >
+                                            {submitMessage}
+                                        </p>
+                                    )}
                                     <button
                                         type="submit"
-                                        className="w-full bg-[#195F60] text-white font-semibold text-sm py-3.5 rounded-xl hover:bg-[#164E4F] active:scale-[0.99] transition-all duration-150 shadow-sm shadow-[#195F60]/20"
+                                        disabled={submitStatus === "sending"}
+                                        className="w-full bg-[#195F60] text-white font-semibold text-sm py-3.5 rounded-xl hover:bg-[#164E4F] active:scale-[0.99] transition-all duration-150 shadow-sm shadow-[#195F60]/20 disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
-                                        Submit Enquiry
+                                        {submitStatus === "sending" ? "Sending…" : "Submit Enquiry"}
                                     </button>
                                 </form>
                             </div>
