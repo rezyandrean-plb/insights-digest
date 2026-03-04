@@ -199,19 +199,20 @@ export default function ArticlePage() {
                                         />
                                     </div>
                                 )}
-                                {section.paragraphs.map((p, i) =>
-                                    p.trim().startsWith("<") ? (
+                                {section.paragraphs.map((p, i) => {
+                                    const hasHtml = /<([a-zA-Z][a-zA-Z0-9]*)\b[\s>]|<\/(strong|em|b|i|s|p|ul|ol|li|blockquote|a)>/i.test(p);
+                                    return hasHtml ? (
                                         <div
                                             key={i}
-                                            className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1.5 [&_strong]:font-bold [&_em]:italic [&_s]:line-through [&_p]:mb-3 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-500"
+                                            className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1.5 [&_strong]:font-bold [&_b]:font-bold [&_em]:italic [&_i]:italic [&_s]:line-through [&_p]:mb-3 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-500 [&_a]:text-primary [&_a]:underline [&_a]:break-words"
                                             dangerouslySetInnerHTML={{ __html: p }}
                                         />
                                     ) : (
                                         <p key={i} className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4">
                                             {p}
                                         </p>
-                                    )
-                                )}
+                                    );
+                                })}
                             </div>
                         ))}
                     </div>
