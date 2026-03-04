@@ -16,9 +16,29 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: process.env.NEXT_PUBLIC_SITE_URL
+    ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+    : undefined,
   title: "Insights — Singapore Real Estate News & Analysis",
   description:
     "Your trusted source for Singapore real estate news, market analysis, property trends, and investment insights.",
+  icons: {
+    icon: "/images/insightsdigest-icon.webp",
+    apple: "/images/insightsdigest-icon.webp",
+  },
+  openGraph: {
+    title: "Insights — Singapore Real Estate News & Analysis",
+    description:
+      "Your trusted source for Singapore real estate news, market analysis, property trends, and investment insights.",
+    images: [{ url: "/images/insightsdigest-icon.webp", width: 512, height: 512, alt: "Insights Digest" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "Insights — Singapore Real Estate News & Analysis",
+    description:
+      "Your trusted source for Singapore real estate news, market analysis, property trends, and investment insights.",
+    images: ["/images/insightsdigest-icon.webp"],
+  },
 };
 
 export default function RootLayout({
