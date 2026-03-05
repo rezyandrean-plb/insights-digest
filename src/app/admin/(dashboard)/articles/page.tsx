@@ -605,8 +605,8 @@ export default function AdminArticlesPage() {
                 </AnimatePresence>
 
                 {/* Table */}
-                <div className="bg-white rounded-2xl border border-border/50 overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
+                <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-visible">
+                    <div className="overflow-x-auto overflow-y-visible">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border/50 bg-section-bg/50">
@@ -780,13 +780,15 @@ export default function AdminArticlesPage() {
                                                             />
                                                         </button>
                                                         <AnimatePresence>
-                                                            {statusDropdownArticleId === article.id && (
+                                                            {statusDropdownArticleId === article.id && (() => {
+                                                                const isNearBottom = idx >= paginated.length - 3;
+                                                                return (
                                                                 <motion.div
-                                                                    initial={{ opacity: 0, y: -4 }}
+                                                                    initial={{ opacity: 0, y: isNearBottom ? 4 : -4 }}
                                                                     animate={{ opacity: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, y: -4 }}
+                                                                    exit={{ opacity: 0, y: isNearBottom ? 4 : -4 }}
                                                                     transition={{ duration: 0.15 }}
-                                                                    className="absolute left-1/2 top-full mt-1 z-20 min-w-[140px] py-1 rounded-lg border border-border/50 bg-white shadow-lg -translate-x-1/2"
+                                                                    className={`absolute left-1/2 z-50 min-w-[140px] py-1 rounded-lg border border-border/50 bg-white shadow-lg -translate-x-1/2 ${isNearBottom ? "bottom-full mb-1" : "top-full mt-1"}`}
                                                                 >
                                                                     {(article.published ?? true) ? (
                                                                         <button
@@ -814,7 +816,8 @@ export default function AdminArticlesPage() {
                                                                         </button>
                                                                     )}
                                                                 </motion.div>
-                                                            )}
+                                                                );
+                                                            })()}
                                                         </AnimatePresence>
                                                     </div>
                                                 </td>
@@ -896,13 +899,15 @@ export default function AdminArticlesPage() {
                                                                 />
                                                             </button>
                                                             <AnimatePresence>
-                                                                {editDropdownArticleId === article.id && (
+                                                                {editDropdownArticleId === article.id && (() => {
+                                                                    const isNearBottom = idx >= paginated.length - 3;
+                                                                    return (
                                                                     <motion.div
-                                                                        initial={{ opacity: 0, y: -4 }}
+                                                                        initial={{ opacity: 0, y: isNearBottom ? 4 : -4 }}
                                                                         animate={{ opacity: 1, y: 0 }}
-                                                                        exit={{ opacity: 0, y: -4 }}
+                                                                        exit={{ opacity: 0, y: isNearBottom ? 4 : -4 }}
                                                                         transition={{ duration: 0.15 }}
-                                                                        className="absolute right-0 top-full mt-1 z-20 min-w-[160px] py-1 rounded-lg border border-border/50 bg-white shadow-lg"
+                                                                        className={`absolute right-0 z-50 min-w-[160px] py-1 rounded-lg border border-border/50 bg-white shadow-lg ${isNearBottom ? "bottom-full mb-1" : "top-full mt-1"}`}
                                                                     >
                                                                         <Link
                                                                             href={`/admin/articles/${article.id}/sections`}
@@ -924,7 +929,8 @@ export default function AdminArticlesPage() {
                                                                             Edit Article
                                                                         </button>
                                                                     </motion.div>
-                                                                )}
+                                                                    );
+                                                                })()}
                                                             </AnimatePresence>
                                                         </div>
                                                         <button
