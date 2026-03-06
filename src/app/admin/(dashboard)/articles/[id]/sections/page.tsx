@@ -45,6 +45,39 @@ const emptySection = (): ArticleSection => ({
     image: "",
 });
 
+/**
+ * Extract <img> tags embedded in paragraphs (e.g. from document imports) and
+ * move them into the section's `images` array so the image uploader shows them.
+ */
+function normalizeSectionImages(section: ArticleSection): ArticleSection {
+    const existing = section.images ?? (section.image ? [section.image] : []);
+    if (existing.length > 0) return section;
+
+    const imgRe = /<img\s[^>]*src=["']([^"']+)["'][^>]*\/?>/gi;
+    const extracted: string[] = [];
+    const cleaned: string[] = [];
+
+    for (const p of section.paragraphs) {
+        const srcs: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = imgRe.exec(p)) !== null) srcs.push(m[1]);
+        imgRe.lastIndex = 0;
+
+        extracted.push(...srcs);
+        const stripped = p.replace(imgRe, "").trim();
+        if (stripped) cleaned.push(stripped);
+    }
+
+    if (extracted.length === 0) return section;
+
+    return {
+        ...section,
+        images: extracted,
+        image: extracted[0] ?? "",
+        paragraphs: cleaned.length > 0 ? cleaned : [""],
+    };
+}
+
 function paragraphsToHtml(paragraphs: string[]): string {
     if (!paragraphs.length) return "";
     return paragraphs.map((p) => `<p>${p}</p>`).join("");
@@ -260,11 +293,11 @@ export default function ArticleSectionsPage({
             .then((data) => {
                 setArticleTitle(data.title);
                 setArticleSlug(data.slug);
-                setSections(
+                const raw: ArticleSection[] =
                     Array.isArray(data.sections) && data.sections.length > 0
                         ? data.sections
-                        : [emptySection()]
-                );
+                        : [emptySection()];
+                setSections(raw.map(normalizeSectionImages));
                 setLoading(false);
             })
             .catch((e) => {
