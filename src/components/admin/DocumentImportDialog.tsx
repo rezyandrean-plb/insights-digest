@@ -121,33 +121,60 @@ function parseHtml(html: string): ParsedDoc {
             ? doc.body.children[0]
             : doc.body);
 
+    const makeImgTag = (src: string, alt?: string) =>
+        `<img src="${src}" alt="${alt ?? ""}" class="inline-doc-img" />`;
+
+    let coverImageSkipped = false;
+
     for (const el of Array.from(bodyEl.children)) {
         const tag = el.tagName.toLowerCase();
         const text = el.textContent?.trim() ?? "";
         const imgSrc = extractImg(el);
         const hLevel = headingLevel(el);
 
-        // Track first image for cover suggestion
         if (imgSrc && !suggestedCover) suggestedCover = imgSrc;
 
+        const shouldSkipAsCover = imgSrc && !coverImageSkipped && imgSrc === suggestedCover;
+
         if (hLevel === 1 && !title) {
-            // First H1 → article title
             title = text;
-        } else if (hLevel === 1 || hLevel === 2 || hLevel === 3 || hLevel === 4) {
-            // H2/H3/H4 → section heading; subsequent H1s also become section headings
+        } else if (hLevel === 1 || hLevel === 2) {
             pushCurrentSection();
             if (current && current.paragraphs.length === 0) {
                 current.heading = text;
             } else {
                 current = { heading: text, paragraphs: [] };
             }
-        } else if (tag === "img" || (imgSrc && !text)) {
-            // Standalone image — attach to current section
-            if (current && !current.image) current.image = imgSrc;
+        } else if (hLevel >= 3 && hLevel <= 6) {
+            if (!current) current = { heading: "", paragraphs: [] };
+            if (text) current.paragraphs.push(`<h${hLevel}>${el.innerHTML}</h${hLevel}>`);
+        } else if (tag === "img") {
+            if (shouldSkipAsCover) {
+                coverImageSkipped = true;
+            } else {
+                if (!current) current = { heading: "", paragraphs: [] };
+                current.paragraphs.push(makeImgTag(imgSrc));
+            }
         } else if (tag === "p" || tag === "div" || tag === "li" || tag === "figure") {
             if (!current) current = { heading: "", paragraphs: [] };
-            if (text) current.paragraphs.push(text);
-            if (imgSrc && !current.image) current.image = imgSrc;
+            const hasImg = !!el.querySelector("img");
+            if (hasImg && !text) {
+                if (shouldSkipAsCover) {
+                    coverImageSkipped = true;
+                } else {
+                    current.paragraphs.push(makeImgTag(imgSrc));
+                }
+            } else if (hasImg) {
+                if (shouldSkipAsCover) {
+                    coverImageSkipped = true;
+                    const cleanedHtml = el.innerHTML.replace(/<img[^>]*>/i, "").trim();
+                    if (cleanedHtml) current.paragraphs.push(cleanedHtml);
+                } else {
+                    current.paragraphs.push(el.innerHTML);
+                }
+            } else if (text) {
+                current.paragraphs.push(text);
+            }
         }
     }
 
@@ -894,20 +921,34 @@ function PreviewStep({
                                     {section.heading && <h2 className="text-lg font-semibold text-foreground">{section.heading}</h2>}
                                     {section.paragraphs.map((p, j) => {
                                         if (i === 0 && j === 0 && !section.heading) return null;
-                                        return p.trim().startsWith("<") ? (
+                                        const hasHtml = /<([a-zA-Z][a-zA-Z0-9]*)\b[\s>]|<\/(strong|em|b|i|s|p|ul|ol|li|blockquote|a|h[1-6]|img)>/i.test(p);
+                                        return hasHtml ? (
                                             <div key={j}
-                                                className="text-sm text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_s]:line-through [&_p]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-4 [&_blockquote]:italic"
+                                                className="text-sm text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1 [&_strong]:font-bold [&_b]:font-bold [&_em]:italic [&_i]:italic [&_s]:line-through [&_p]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-foreground [&_h3]:mt-4 [&_h3]:mb-2 [&_h4]:text-sm [&_h4]:font-bold [&_h4]:text-foreground [&_h4]:mt-3 [&_h4]:mb-1.5 [&_h5]:text-sm [&_h5]:font-semibold [&_h5]:mt-2 [&_h5]:mb-1 [&_h6]:text-xs [&_h6]:font-semibold [&_h6]:mt-2 [&_h6]:mb-1 [&_img]:w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-3 [&_img]:object-cover"
                                                 dangerouslySetInnerHTML={{ __html: p }}
                                             />
                                         ) : (
                                             <p key={j} className="text-sm text-foreground leading-relaxed">{p}</p>
                                         );
                                     })}
-                                    {section.image && (
-                                        <div className="w-full rounded-xl overflow-hidden">
-                                            <img src={section.image} alt={section.heading || "Section image"} className="w-full h-auto object-cover" />
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const imgs = section.images ?? (section.image ? [section.image] : []);
+                                        if (imgs.length === 0) return null;
+                                        if (imgs.length === 1) return (
+                                            <div className="w-full rounded-xl overflow-hidden">
+                                                <img src={imgs[0]} alt={section.heading || "Section image"} className="w-full h-auto object-cover" />
+                                            </div>
+                                        );
+                                        return (
+                                            <div className="flex flex-col gap-2">
+                                                {imgs.map((img, imgIdx) => (
+                                                    <div key={imgIdx} className="rounded-xl overflow-hidden">
+                                                        <img src={img} alt={`${section.heading || "Section"} ${imgIdx + 1}`} className="w-full h-auto object-cover" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             ))}
                             {parsedDoc.sections.length === 0 && (

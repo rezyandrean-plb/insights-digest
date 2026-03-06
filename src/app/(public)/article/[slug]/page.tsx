@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Article } from "@/lib/data";
 
 function ArticleSkeleton() {
@@ -37,6 +37,68 @@ function ArticleSkeleton() {
                     </aside>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function SectionCarousel({ images, alt }: { images: string[]; alt: string }) {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [current, setCurrent] = useState(0);
+
+    const scroll = (dir: -1 | 1) => {
+        if (!scrollRef.current) return;
+        const el = scrollRef.current;
+        el.scrollBy({ left: dir * el.offsetWidth, behavior: "smooth" });
+    };
+
+    const handleScroll = () => {
+        if (!scrollRef.current) return;
+        const el = scrollRef.current;
+        const w = el.offsetWidth;
+        if (w > 0) setCurrent(Math.round(el.scrollLeft / w));
+    };
+
+    return (
+        <div className="relative mb-6 group/carousel">
+            <div
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="flex overflow-x-auto snap-x snap-mandatory rounded-2xl"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+                {images.map((img, i) => (
+                    <div key={i} className="w-full shrink-0 snap-start rounded-2xl overflow-hidden">
+                        <img src={img} alt={`${alt} ${i + 1}`} className="w-full h-auto object-cover" />
+                    </div>
+                ))}
+            </div>
+            {images.length > 1 && (
+                <>
+                    <button
+                        type="button"
+                        onClick={() => scroll(-1)}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-secondary opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0"
+                        disabled={current === 0}
+                        aria-label="Previous"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => scroll(1)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-secondary opacity-0 group-hover/carousel:opacity-100 transition-opacity disabled:opacity-0"
+                        disabled={current >= images.length - 1}
+                        aria-label="Next"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                    <div className="flex items-center justify-center gap-1.5 mt-3">
+                        {images.map((_, i) => (
+                            <span key={i} className={`block w-1.5 h-1.5 rounded-full transition-colors ${i === current ? "bg-[#195F60]" : "bg-[#195F60]/25"}`} />
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 }
@@ -190,21 +252,36 @@ export default function ArticlePage() {
                                         {section.heading}
                                     </h2>
                                 )}
-                                {section.image && (
-                                    <div className="rounded-2xl overflow-hidden mb-6">
-                                        <img
-                                            src={section.image}
-                                            alt={section.heading ? `${article.title} — ${section.heading}` : `${article.title} — Section ${sIdx + 1}`}
-                                            className="w-full h-auto object-cover"
-                                        />
-                                    </div>
-                                )}
+                                {(() => {
+                                    const sectionImages = section.images ?? (section.image ? [section.image] : []);
+                                    if (sectionImages.length === 0) return null;
+                                    const altBase = section.heading ? `${article.title} — ${section.heading}` : `${article.title} — Section ${sIdx + 1}`;
+                                    if (sectionImages.length === 1) {
+                                        return (
+                                            <div className="rounded-2xl overflow-hidden mb-6">
+                                                <img src={sectionImages[0]} alt={altBase} className="w-full h-auto object-cover" />
+                                            </div>
+                                        );
+                                    }
+                                    if (section.imagesCarousel) {
+                                        return <SectionCarousel images={sectionImages} alt={altBase} />;
+                                    }
+                                    return (
+                                        <div className="flex flex-col gap-4 mb-6">
+                                            {sectionImages.map((img, imgIdx) => (
+                                                <div key={imgIdx} className="rounded-2xl overflow-hidden">
+                                                    <img src={img} alt={`${altBase} ${imgIdx + 1}`} className="w-full h-auto object-cover" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
                                 {section.paragraphs.map((p, i) => {
-                                    const hasHtml = /<([a-zA-Z][a-zA-Z0-9]*)\b[\s>]|<\/(strong|em|b|i|s|p|ul|ol|li|blockquote|a)>/i.test(p);
+                                    const hasHtml = /<([a-zA-Z][a-zA-Z0-9]*)\b[\s>]|<\/(strong|em|b|i|s|p|ul|ol|li|blockquote|a|h[1-6]|img)>/i.test(p);
                                     return hasHtml ? (
                                         <div
                                             key={i}
-                                            className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1.5 [&_strong]:font-bold [&_b]:font-bold [&_em]:italic [&_i]:italic [&_s]:line-through [&_p]:mb-3 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-500 [&_a]:text-primary [&_a]:underline [&_a]:break-words"
+                                            className="text-sm sm:text-base text-gray-600 leading-relaxed mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1.5 [&_strong]:font-bold [&_b]:font-bold [&_em]:italic [&_i]:italic [&_s]:line-through [&_p]:mb-3 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-500 [&_a]:text-primary [&_a]:underline [&_a]:break-words [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-black [&_h3]:mt-6 [&_h3]:mb-3 [&_h3]:font-[var(--font-poppins)] [&_h4]:text-base [&_h4]:font-bold [&_h4]:text-black [&_h4]:mt-4 [&_h4]:mb-2 [&_h5]:text-sm [&_h5]:font-bold [&_h5]:text-black [&_h5]:mt-3 [&_h5]:mb-2 [&_h6]:text-sm [&_h6]:font-semibold [&_h6]:text-black [&_h6]:mt-3 [&_h6]:mb-1 [&_img]:w-full [&_img]:h-auto [&_img]:rounded-2xl [&_img]:my-4 [&_img]:object-cover"
                                             dangerouslySetInnerHTML={{ __html: p }}
                                         />
                                     ) : (

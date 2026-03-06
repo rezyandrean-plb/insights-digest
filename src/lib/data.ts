@@ -3,6 +3,8 @@ export interface ArticleSection {
     heading: string;
     paragraphs: string[];
     image?: string;
+    images?: string[];
+    imagesCarousel?: boolean;
 }
 
 export type ArticleCategory =

@@ -11,6 +11,8 @@ import {
     GripVertical,
     ChevronUp,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     ImageIcon,
     AlignLeft,
     Heading2,
@@ -26,6 +28,7 @@ import {
     ListOrdered,
     Undo2,
     Redo2,
+    GalleryHorizontalEnd,
 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -104,107 +107,122 @@ function RichTextEditor({ initialHtml, onChange }: { initialHtml: string; onChan
     );
 }
 
-function SectionImageUploader({
-    image,
-    onUploaded,
-    onRemove,
+function SectionImagesUploader({
+    images,
+    onImagesChange,
 }: {
-    image?: string;
-    onUploaded: (url: string) => void;
-    onRemove: () => void;
+    images: string[];
+    onImagesChange: (imgs: string[]) => void;
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
     const [dragOver, setDragOver] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
 
-    const upload = async (file: File) => {
+    const upload = async (files: FileList | File[]) => {
         setUploading(true);
         setUploadError(null);
+        const newUrls: string[] = [];
         try {
-            const form = new FormData();
-            form.append("file", file);
-            const res = await fetch("/api/upload", { method: "POST", body: form });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? "Upload failed");
-            onUploaded(data.url);
+            for (const file of Array.from(files)) {
+                if (!file.type.startsWith("image/")) continue;
+                const form = new FormData();
+                form.append("file", file);
+                const res = await fetch("/api/upload", { method: "POST", body: form });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                newUrls.push(data.url);
+            }
+            onImagesChange([...images, ...newUrls]);
         } catch (e: unknown) {
             setUploadError(e instanceof Error ? e.message : "Upload failed");
+            if (newUrls.length > 0) onImagesChange([...images, ...newUrls]);
         } finally {
             setUploading(false);
         }
     };
 
+    const removeImage = (idx: number) =>
+        onImagesChange(images.filter((_, i) => i !== idx));
+
+    const moveImage = (idx: number, dir: -1 | 1) => {
+        const swap = idx + dir;
+        if (swap < 0 || swap >= images.length) return;
+        const next = [...images];
+        [next[idx], next[swap]] = [next[swap], next[idx]];
+        onImagesChange(next);
+    };
+
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setDragOver(false);
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith("image/")) upload(file);
+        if (e.dataTransfer.files.length > 0) upload(e.dataTransfer.files);
     };
 
     return (
-        <div>
+        <div className="space-y-2">
             <input
                 ref={inputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
                 className="hidden"
                 onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) upload(f);
+                    if (e.target.files && e.target.files.length > 0) upload(e.target.files);
                     e.target.value = "";
                 }}
             />
 
-            {image ? (
-                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-border/50 group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image} alt="Section" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => inputRef.current?.click()}
-                            disabled={uploading}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-foreground hover:bg-white/90 transition-colors"
-                        >
-                            <UploadCloud className="w-3.5 h-3.5" />
-                            Change
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onRemove}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-xs font-medium text-red-600 hover:bg-white/90 transition-colors"
-                        >
-                            <X className="w-3.5 h-3.5" />
-                            Remove
-                        </button>
-                    </div>
+            {images.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {images.map((img, idx) => (
+                        <div key={`${img}-${idx}`} className="relative group rounded-xl overflow-hidden border border-border/50 aspect-[4/3]">
+                            <img src={img} alt={`Image ${idx + 1}`} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                <button type="button" onClick={() => moveImage(idx, -1)} disabled={idx === 0}
+                                    className="w-6 h-6 rounded bg-white/90 flex items-center justify-center text-foreground disabled:opacity-30 hover:bg-white transition-colors"
+                                    title="Move left"
+                                ><ChevronLeft className="w-3.5 h-3.5" /></button>
+                                <button type="button" onClick={() => moveImage(idx, 1)} disabled={idx === images.length - 1}
+                                    className="w-6 h-6 rounded bg-white/90 flex items-center justify-center text-foreground disabled:opacity-30 hover:bg-white transition-colors"
+                                    title="Move right"
+                                ><ChevronRight className="w-3.5 h-3.5" /></button>
+                                <button type="button" onClick={() => removeImage(idx)}
+                                    className="w-6 h-6 rounded bg-white/90 flex items-center justify-center text-red-600 hover:bg-white transition-colors"
+                                    title="Remove"
+                                ><X className="w-3.5 h-3.5" /></button>
+                            </div>
+                            <span className="absolute top-1.5 left-1.5 text-[10px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">
+                                {idx + 1}
+                            </span>
+                        </div>
+                    ))}
                 </div>
-            ) : (
-                <button
-                    type="button"
-                    onClick={() => inputRef.current?.click()}
-                    disabled={uploading}
-                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={handleDrop}
-                    className={`w-full py-8 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 text-muted ${
-                        dragOver
-                            ? "border-primary bg-primary/5 text-primary"
-                            : "border-border hover:border-primary/50 hover:bg-section-bg/40"
-                    }`}
-                >
-                    {uploading ? (
-                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    ) : (
-                        <UploadCloud className="w-5 h-5" />
-                    )}
-                    <span className="text-xs">
-                        {uploading ? "Uploading…" : "Click or drag image here"}
-                    </span>
-                    <span className="text-[10px] text-muted/60">JPEG, PNG, WebP, GIF · Max 5 MB</span>
-                </button>
             )}
+
+            <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                disabled={uploading}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                className={`w-full py-6 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 text-muted ${
+                    dragOver
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border hover:border-primary/50 hover:bg-section-bg/40"
+                }`}
+            >
+                {uploading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                ) : (
+                    <UploadCloud className="w-5 h-5" />
+                )}
+                <span className="text-xs">
+                    {uploading ? "Uploading…" : images.length > 0 ? "Add more images" : "Click or drag images here"}
+                </span>
+                <span className="text-[10px] text-muted/60">JPEG, PNG, WebP, GIF · Max 5 MB each · Multiple files OK</span>
+            </button>
 
             {uploadError && (
                 <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
@@ -432,18 +450,36 @@ export default function ArticleSectionsPage({
                                         />
                                     </div>
 
-                                    {/* Image */}
+                                    {/* Images */}
                                     <div>
                                         <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider mb-1.5">
                                             <ImageIcon className="w-3.5 h-3.5 text-primary" />
-                                            Image
+                                            Images
                                             <span className="normal-case font-normal text-muted ml-1">(optional)</span>
                                         </label>
-                                        <SectionImageUploader
-                                            image={section.image || undefined}
-                                            onUploaded={(url) => updateSection(sIdx, { image: url })}
-                                            onRemove={() => updateSection(sIdx, { image: "" })}
+                                        <SectionImagesUploader
+                                            images={section.images ?? (section.image ? [section.image] : [])}
+                                            onImagesChange={(imgs) => updateSection(sIdx, { images: imgs, image: imgs[0] ?? "" })}
                                         />
+                                        {(section.images ?? (section.image ? [section.image] : [])).length > 1 && (
+                                            <label className="flex items-center gap-2.5 mt-3 cursor-pointer select-none">
+                                                <div className="relative">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={section.imagesCarousel ?? false}
+                                                        onChange={(e) => updateSection(sIdx, { imagesCarousel: e.target.checked })}
+                                                        className="sr-only"
+                                                    />
+                                                    <div className={`w-9 h-5 rounded-full transition-colors ${section.imagesCarousel ? "bg-primary" : "bg-muted/40"}`}>
+                                                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${section.imagesCarousel ? "translate-x-4" : "translate-x-0.5"}`} />
+                                                    </div>
+                                                </div>
+                                                <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                                                    <GalleryHorizontalEnd className="w-3.5 h-3.5 text-primary" />
+                                                    Scrollable carousel
+                                                </span>
+                                            </label>
+                                        )}
                                     </div>
 
                                     {/* Content */}
