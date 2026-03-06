@@ -68,6 +68,8 @@ export default function AdminReelsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
+    const [clearingAll, setClearingAll] = useState(false);
     const [editingReel, setEditingReel] = useState<Reel | null>(null);
     const [deletingReel, setDeletingReel] = useState<Reel | null>(null);
     const [formData, setFormData] = useState(emptyReel);
@@ -241,6 +243,26 @@ export default function AdminReelsPage() {
         }
     }, [deletingReel, saving, paginated.length, currentPage]);
 
+    const handleClearAll = useCallback(async () => {
+        if (clearingAll) return;
+        setClearingAll(true);
+        setError(null);
+        try {
+            const res = await fetch("/api/admin/reels/clear", { method: "POST" });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error ?? "Failed to clear reels");
+            setReelsList([]);
+            setClearAllDialogOpen(false);
+            setCurrentPage(1);
+            toast.success(`Removed ${data.deleted ?? 0} reel(s) from the database.`);
+            await fetchReels();
+        } catch {
+            setError("Failed to clear reels. Please try again.");
+        } finally {
+            setClearingAll(false);
+        }
+    }, [clearingAll, fetchReels]);
+
     const updateField = <K extends keyof typeof formData>(
         key: K,
         value: (typeof formData)[K]
@@ -294,13 +316,25 @@ export default function AdminReelsPage() {
                             {reelsList.length} reels total
                         </p>
                     </div>
-                    <button
-                        onClick={openCreateDialog}
-                        className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors shadow-sm self-start sm:self-auto"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Reel
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                        {reelsList.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setClearAllDialogOpen(true)}
+                                className="inline-flex items-center gap-2 border border-red-200 text-red-600 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Clear all reels
+                            </button>
+                        )}
+                        <button
+                            onClick={openCreateDialog}
+                            className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New Reel
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters Row */}
@@ -873,6 +907,36 @@ export default function AdminReelsPage() {
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     )}
                                     Delete
+                                </button>
+                            </div>
+                        </Dialog.Content>
+                    </Dialog.Portal>
+                </Dialog.Root>
+
+                {/* Clear all reels confirmation */}
+                <Dialog.Root open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
+                    <Dialog.Portal>
+                        <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
+                        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-md bg-white rounded-2xl shadow-xl p-6 sm:p-8 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95">
+                            <Dialog.Title className="text-lg font-bold text-foreground mb-2">
+                                Clear all reels
+                            </Dialog.Title>
+                            <Dialog.Description className="text-sm text-muted leading-relaxed">
+                                Remove all {reelsList.length} reel(s) from the database? This cannot be undone.
+                            </Dialog.Description>
+                            <div className="flex items-center justify-end gap-3 mt-8">
+                                <Dialog.Close className="px-5 py-2.5 rounded-xl text-sm font-medium text-muted border border-border hover:bg-section-bg transition-colors">
+                                    Cancel
+                                </Dialog.Close>
+                                <button
+                                    onClick={handleClearAll}
+                                    disabled={clearingAll}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 shadow-sm"
+                                >
+                                    {clearingAll && (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    )}
+                                    Clear all
                                 </button>
                             </div>
                         </Dialog.Content>
