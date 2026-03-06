@@ -6,8 +6,6 @@ import { useState, useEffect } from "react";
 import {
     FileText,
     Film,
-    Rocket,
-    Home,
     Settings,
     LayoutDashboard,
     ArrowRight,
@@ -20,8 +18,6 @@ import {
 interface Counts {
     articles: number | null;
     reels: number | null;
-    newLaunches: number | null;
-    homeTours: number | null;
     enquiries: number | null;
 }
 
@@ -61,30 +57,6 @@ const NAV_SECTIONS = [
         countLabel: "reels",
     },
     {
-        icon: Rocket,
-        title: "New Launches",
-        description: "Manage new property launch listings, descriptions, and images.",
-        href: "/admin/new-launches",
-        color: "text-primary",
-        bg: "bg-primary/10",
-        hoverBg: "group-hover:bg-primary/20",
-        accent: "border-l-primary",
-        countKey: "newLaunches" as keyof Counts,
-        countLabel: "items",
-    },
-    {
-        icon: Home,
-        title: "Home Tours",
-        description: "Manage home tour listings across Condo, HDB, Landed, and more.",
-        href: "/admin/home-tours",
-        color: "text-secondary",
-        bg: "bg-secondary/10",
-        hoverBg: "group-hover:bg-secondary/20",
-        accent: "border-l-secondary",
-        countKey: "homeTours" as keyof Counts,
-        countLabel: "tours",
-    },
-    {
         icon: Mail,
         title: "Enquiries",
         description: "View and manage contact form submissions from the Work With Us page.",
@@ -111,8 +83,6 @@ const NAV_SECTIONS = [
 const STAT_CARDS = [
     { key: "articles" as keyof Counts, label: "Articles", icon: FileText, color: "text-secondary", bg: "bg-secondary/10" },
     { key: "reels" as keyof Counts, label: "Reels", icon: Film, color: "text-accent", bg: "bg-accent/10" },
-    { key: "newLaunches" as keyof Counts, label: "New Launches", icon: Rocket, color: "text-primary", bg: "bg-primary/10" },
-    { key: "homeTours" as keyof Counts, label: "Home Tours", icon: Home, color: "text-primary-dark", bg: "bg-primary/10" },
     { key: "enquiries" as keyof Counts, label: "Enquiries", icon: Mail, color: "text-accent", bg: "bg-accent/10" },
 ];
 
@@ -129,8 +99,6 @@ export default function AdminPage() {
     const [counts, setCounts] = useState<Counts>({
         articles: null,
         reels: null,
-        newLaunches: null,
-        homeTours: null,
         enquiries: null,
     });
     const [loading, setLoading] = useState(true);
@@ -139,15 +107,11 @@ export default function AdminPage() {
         Promise.all([
             fetch("/api/articles").then((r) => r.ok ? r.json() : []).catch(() => []),
             fetch("/api/reels").then((r) => r.ok ? r.json() : []).catch(() => []),
-            fetch("/api/new-launches").then((r) => r.ok ? r.json() : []).catch(() => []),
-            fetch("/api/home-tours").then((r) => r.ok ? r.json() : []).catch(() => []),
             fetch("/api/admin/enquiries").then((r) => r.ok ? r.json() : []).catch(() => []),
-        ]).then(([articles, reels, newLaunches, homeTours, enquiries]) => {
+        ]).then(([articles, reels, enquiries]) => {
             setCounts({
                 articles: Array.isArray(articles) ? articles.length : 0,
                 reels: Array.isArray(reels) ? reels.length : 0,
-                newLaunches: Array.isArray(newLaunches) ? newLaunches.length : 0,
-                homeTours: Array.isArray(homeTours) ? homeTours.length : 0,
                 enquiries: Array.isArray(enquiries) ? enquiries.length : 0,
             });
             setLoading(false);
@@ -193,7 +157,7 @@ export default function AdminPage() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.08 }}
-                    className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-10"
+                    className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10"
                 >
                     {STAT_CARDS.map(({ key, label, icon: Icon, color, bg }) => (
                         <div
