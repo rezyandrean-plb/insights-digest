@@ -29,9 +29,11 @@ import {
     Undo2,
     Redo2,
     GalleryHorizontalEnd,
+    Link2,
 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import LinkExtension from "@tiptap/extension-link";
 import type { ArticleSection } from "@/lib/data";
 
 function generateId() {
@@ -113,12 +115,26 @@ function ToolbarBtn({ active, onClick, title, children }: {
 
 function RichTextEditor({ initialHtml, onChange }: { initialHtml: string; onChange: (html: string) => void }) {
     const editor = useEditor({
-        extensions: [StarterKit],
+        extensions: [
+            StarterKit,
+            LinkExtension.configure({ openOnClick: false, HTMLAttributes: { class: "text-primary underline" } }),
+        ],
         content: initialHtml,
         immediatelyRender: false,
         onUpdate({ editor }) { onChange(editor.getHTML()); },
         editorProps: { attributes: { class: "outline-none min-h-[120px] text-sm text-foreground" } },
     });
+
+    const toggleLink = () => {
+        if (!editor) return;
+        if (editor.isActive("link")) {
+            editor.chain().focus().unsetLink().run();
+            return;
+        }
+        const url = window.prompt("Enter URL:");
+        if (url) editor.chain().focus().setLink({ href: url }).run();
+    };
+
     if (!editor) return null;
     return (
         <div className="border border-border rounded-xl overflow-hidden">
@@ -127,6 +143,8 @@ function RichTextEditor({ initialHtml, onChange }: { initialHtml: string; onChan
                 <ToolbarBtn active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} title="Italic"><Italic className="w-3.5 h-3.5" /></ToolbarBtn>
                 <ToolbarBtn active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} title="Strikethrough"><Strikethrough className="w-3.5 h-3.5" /></ToolbarBtn>
                 <div className="w-px h-5 bg-border/60 mx-1" />
+                <ToolbarBtn active={editor.isActive("link")} onClick={toggleLink} title="Link"><Link2 className="w-3.5 h-3.5" /></ToolbarBtn>
+                <div className="w-px h-5 bg-border/60 mx-1" />
                 <ToolbarBtn active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Bullet list"><List className="w-3.5 h-3.5" /></ToolbarBtn>
                 <ToolbarBtn active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Ordered list"><ListOrdered className="w-3.5 h-3.5" /></ToolbarBtn>
                 <div className="w-px h-5 bg-border/60 mx-1" />
@@ -134,7 +152,7 @@ function RichTextEditor({ initialHtml, onChange }: { initialHtml: string; onChan
                 <ToolbarBtn active={false} onClick={() => editor.chain().focus().redo().run()} title="Redo"><Redo2 className="w-3.5 h-3.5" /></ToolbarBtn>
             </div>
             <EditorContent editor={editor}
-                className="p-3 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:mb-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_ol]:mb-2 [&_.ProseMirror_li]:mb-1 [&_.ProseMirror_strong]:font-bold [&_.ProseMirror_em]:italic [&_.ProseMirror_s]:line-through [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-primary/30 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic"
+                className="p-3 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:mb-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_ol]:mb-2 [&_.ProseMirror_li]:mb-1 [&_.ProseMirror_strong]:font-bold [&_.ProseMirror_em]:italic [&_.ProseMirror_s]:line-through [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-primary/30 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_a]:text-primary [&_.ProseMirror_a]:underline"
             />
         </div>
     );
