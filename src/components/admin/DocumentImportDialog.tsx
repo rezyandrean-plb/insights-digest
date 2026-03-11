@@ -5,6 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
 import {
     X,
     FileText,
@@ -28,6 +29,7 @@ import {
     Eye,
     Trash2,
     ImageIcon,
+    Link2,
 } from "lucide-react";
 import type { Article, ArticleSection, ArticleCategory } from "@/lib/data";
 
@@ -124,6 +126,16 @@ function parseHtml(html: string): ParsedDoc {
     const makeImgTag = (src: string, alt?: string) =>
         `<img src="${src}" alt="${alt ?? ""}" class="inline-doc-img" />`;
 
+    /** Clean an element's innerHTML: unwrap Google redirect URLs, strip inline styles from <a> */
+    const cleanInnerHtml = (html: string): string =>
+        html
+            .replace(/<a\s[^>]*href=["']https?:\/\/www\.google\.com\/url\?[^"']*?q=(https?(?:%3A|:)[^&"']+)[^"']*["'][^>]*>/gi,
+                (_m, encodedUrl: string) => `<a href="${decodeURIComponent(encodedUrl)}">`
+            )
+            .replace(/<a\s([^>]*?)style="[^"]*"/gi, "<a $1")
+            .replace(/<span\s+style="[^"]*">/gi, "")
+            .replace(/<\/span>/gi, "");
+
     let coverImageSkipped = false;
 
     for (const el of Array.from(bodyEl.children)) {
@@ -131,6 +143,7 @@ function parseHtml(html: string): ParsedDoc {
         const text = el.textContent?.trim() ?? "";
         const imgSrc = extractImg(el);
         const hLevel = headingLevel(el);
+        const hasLink = !!el.querySelector("a[href]");
 
         if (imgSrc && !suggestedCover) suggestedCover = imgSrc;
 
@@ -147,7 +160,7 @@ function parseHtml(html: string): ParsedDoc {
             }
         } else if (hLevel >= 3 && hLevel <= 6) {
             if (!current) current = { heading: "", paragraphs: [] };
-            if (text) current.paragraphs.push(`<h${hLevel}>${el.innerHTML}</h${hLevel}>`);
+            if (text) current.paragraphs.push(`<h${hLevel}>${cleanInnerHtml(el.innerHTML)}</h${hLevel}>`);
         } else if (tag === "img") {
             if (shouldSkipAsCover) {
                 coverImageSkipped = true;
@@ -168,12 +181,12 @@ function parseHtml(html: string): ParsedDoc {
                 if (shouldSkipAsCover) {
                     coverImageSkipped = true;
                     const cleanedHtml = el.innerHTML.replace(/<img[^>]*>/i, "").trim();
-                    if (cleanedHtml) current.paragraphs.push(cleanedHtml);
+                    if (cleanedHtml) current.paragraphs.push(cleanInnerHtml(cleanedHtml));
                 } else {
-                    current.paragraphs.push(el.innerHTML);
+                    current.paragraphs.push(cleanInnerHtml(el.innerHTML));
                 }
             } else if (text) {
-                current.paragraphs.push(text);
+                current.paragraphs.push(hasLink ? cleanInnerHtml(el.innerHTML) : text);
             }
         }
     }
@@ -262,12 +275,26 @@ function ToolbarBtn({ active, onClick, title, children }: {
 // ─── Section editor (TipTap) ──────────────────────────────────────────────────
 function SectionEditor({ initialHtml, onChange }: { initialHtml: string; onChange: (html: string) => void }) {
     const editor = useEditor({
-        extensions: [StarterKit],
+        extensions: [
+            StarterKit,
+            Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-primary underline" } }),
+        ],
         content: initialHtml,
         immediatelyRender: false,
         onUpdate({ editor }) { onChange(editor.getHTML()); },
         editorProps: { attributes: { class: "outline-none min-h-[100px] text-sm text-foreground" } },
     });
+
+    const toggleLink = () => {
+        if (!editor) return;
+        if (editor.isActive("link")) {
+            editor.chain().focus().unsetLink().run();
+            return;
+        }
+        const url = window.prompt("Enter URL:");
+        if (url) editor.chain().focus().setLink({ href: url }).run();
+    };
+
     if (!editor) return null;
     return (
         <div className="border border-border rounded-xl overflow-hidden">
@@ -276,6 +303,8 @@ function SectionEditor({ initialHtml, onChange }: { initialHtml: string; onChang
                 <ToolbarBtn active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} title="Italic"><Italic className="w-3.5 h-3.5" /></ToolbarBtn>
                 <ToolbarBtn active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} title="Strikethrough"><Strikethrough className="w-3.5 h-3.5" /></ToolbarBtn>
                 <div className="w-px h-5 bg-border/60 mx-1" />
+                <ToolbarBtn active={editor.isActive("link")} onClick={toggleLink} title="Link"><Link2 className="w-3.5 h-3.5" /></ToolbarBtn>
+                <div className="w-px h-5 bg-border/60 mx-1" />
                 <ToolbarBtn active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Bullet list"><List className="w-3.5 h-3.5" /></ToolbarBtn>
                 <ToolbarBtn active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Ordered list"><ListOrdered className="w-3.5 h-3.5" /></ToolbarBtn>
                 <div className="w-px h-5 bg-border/60 mx-1" />
@@ -283,7 +312,7 @@ function SectionEditor({ initialHtml, onChange }: { initialHtml: string; onChang
                 <ToolbarBtn active={false} onClick={() => editor.chain().focus().redo().run()} title="Redo"><Redo2 className="w-3.5 h-3.5" /></ToolbarBtn>
             </div>
             <EditorContent editor={editor}
-                className="p-3 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:mb-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_ol]:mb-2 [&_.ProseMirror_li]:mb-1 [&_.ProseMirror_strong]:font-bold [&_.ProseMirror_em]:italic [&_.ProseMirror_s]:line-through [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-primary/30 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic"
+                className="p-3 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:mb-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_ol]:mb-2 [&_.ProseMirror_li]:mb-1 [&_.ProseMirror_strong]:font-bold [&_.ProseMirror_em]:italic [&_.ProseMirror_s]:line-through [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-primary/30 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_a]:text-primary [&_.ProseMirror_a]:underline"
             />
         </div>
     );
@@ -924,7 +953,7 @@ function PreviewStep({
                                         const hasHtml = /<([a-zA-Z][a-zA-Z0-9]*)\b[\s>]|<\/(strong|em|b|i|s|p|ul|ol|li|blockquote|a|h[1-6]|img)>/i.test(p);
                                         return hasHtml ? (
                                             <div key={j}
-                                                className="text-sm text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1 [&_strong]:font-bold [&_b]:font-bold [&_em]:italic [&_i]:italic [&_s]:line-through [&_p]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-foreground [&_h3]:mt-4 [&_h3]:mb-2 [&_h4]:text-sm [&_h4]:font-bold [&_h4]:text-foreground [&_h4]:mt-3 [&_h4]:mb-1.5 [&_h5]:text-sm [&_h5]:font-semibold [&_h5]:mt-2 [&_h5]:mb-1 [&_h6]:text-xs [&_h6]:font-semibold [&_h6]:mt-2 [&_h6]:mb-1 [&_img]:w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-3 [&_img]:object-cover"
+                                                className="text-sm text-foreground leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_li]:mb-1 [&_strong]:font-bold [&_b]:font-bold [&_em]:italic [&_i]:italic [&_s]:line-through [&_p]:mb-2 [&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_a]:text-primary [&_a]:underline [&_a]:break-words [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-foreground [&_h3]:mt-4 [&_h3]:mb-2 [&_h4]:text-sm [&_h4]:font-bold [&_h4]:text-foreground [&_h4]:mt-3 [&_h4]:mb-1.5 [&_h5]:text-sm [&_h5]:font-semibold [&_h5]:mt-2 [&_h5]:mb-1 [&_h6]:text-xs [&_h6]:font-semibold [&_h6]:mt-2 [&_h6]:mb-1 [&_img]:w-full [&_img]:h-auto [&_img]:rounded-xl [&_img]:my-3 [&_img]:object-cover"
                                                 dangerouslySetInnerHTML={{ __html: p }}
                                             />
                                         ) : (
