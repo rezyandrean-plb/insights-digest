@@ -3,9 +3,10 @@ import { BetaAnalyticsDataClient } from "@google-analytics/data";
 const GA4_PROPERTY_ID = process.env.GA4_PROPERTY_ID?.trim();
 const GA_SERVICE_ACCOUNT_JSON = process.env.GA_SERVICE_ACCOUNT_JSON?.trim();
 
+/** Compatible with GA4 API IRow (dimensionValues/metricValues can be null; value can be null). */
 type GaRow = {
-    dimensionValues?: Array<{ value?: string }>;
-    metricValues?: Array<{ value?: string }>;
+    dimensionValues?: Array<{ value?: string | null }> | null;
+    metricValues?: Array<{ value?: string | null }> | null;
 };
 
 function getGaClient(): BetaAnalyticsDataClient | null {
