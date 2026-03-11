@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { getAnalyticsId } from "@/lib/settings";
 import "./globals.css";
 
 const inter = Inter({
@@ -41,14 +43,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const analyticsId = await getAnalyticsId();
+
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`} suppressHydrationWarning>
       <body className="antialiased font-sans" suppressHydrationWarning>
+        <GoogleAnalytics analyticsId={analyticsId} />
         {children}
       </body>
     </html>
