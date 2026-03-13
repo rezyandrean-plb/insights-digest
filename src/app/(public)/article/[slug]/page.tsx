@@ -121,6 +121,7 @@ export default function ArticlePage() {
     const [error, setError] = useState(false);
     const [notFound, setNotFound] = useState(false);
     const [activeSection, setActiveSection] = useState<string>("");
+    const articleRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         if (!slug) {
@@ -176,6 +177,18 @@ export default function ArticlePage() {
         return () => observer.disconnect();
     }, [sections]);
 
+    useEffect(() => {
+        if (!articleRef.current) return;
+        const links = articleRef.current.querySelectorAll("a[href]");
+        links.forEach((a) => {
+            const el = a as HTMLAnchorElement;
+            if (!el.getAttribute("target")) {
+                el.setAttribute("target", "_blank");
+                el.setAttribute("rel", "noopener noreferrer");
+            }
+        });
+    });
+
     if (loading) return <ArticleSkeleton />;
 
     if (error) {
@@ -209,7 +222,7 @@ export default function ArticlePage() {
     }
 
     return (
-        <article className="pb-16 bg-[#F1EDEB]">
+        <article ref={articleRef} className="pb-16 bg-[#F1EDEB]">
             <div className="container-custom pt-8 lg:pt-12">
                 {/* Title */}
                 <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-black leading-[125%] font-[var(--font-poppins)]">
