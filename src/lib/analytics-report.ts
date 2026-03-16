@@ -175,40 +175,52 @@ export async function getDailyAnalyticsReport(): Promise<string | null> {
 
         // --- 4. Top Articles (7d views, 30d views, avg read time) ---
         try {
-            const [topArt] = await client.runReport({
-                property: prop,
-                dateRanges: [
-                    { startDate: "7daysAgo", endDate: "yesterday" },
-                    { startDate: "30daysAgo", endDate: "yesterday" },
-                ],
-                dimensions: [{ name: "pagePath" }],
-                metrics: [
-                    { name: "screenPageViews" },
-                    { name: "userEngagementDuration" },
-                ],
+            const articleFilter = {
                 dimensionFilter: {
                     filter: {
                         fieldName: "pagePath",
-                        stringFilter: { matchType: "BEGINS_WITH", value: ARTICLE_PREFIX },
+                        stringFilter: { matchType: "BEGINS_WITH" as const, value: ARTICLE_PREFIX },
                     },
                 },
+            };
+
+            // 7d: top 10 by views, with engagement duration (one row per article)
+            const [topArt7] = await client.runReport({
+                property: prop,
+                dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
+                dimensions: [{ name: "pagePath" }],
+                metrics: [{ name: "screenPageViews" }, { name: "userEngagementDuration" }],
+                ...articleFilter,
                 limit: 10,
                 orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
             });
-            if (topArt.rows?.length) {
+
+            // 30d: all article views for lookup (one row per article)
+            const [topArt30] = await client.runReport({
+                property: prop,
+                dateRanges: [{ startDate: "30daysAgo", endDate: "yesterday" }],
+                dimensions: [{ name: "pagePath" }],
+                metrics: [{ name: "screenPageViews" }],
+                ...articleFilter,
+                limit: 100,
+            });
+
+            const views30ByPath = new Map<string, number>();
+            for (const r of topArt30.rows ?? []) {
+                views30ByPath.set(dv(r, 0), mv(r, 0));
+            }
+
+            if (topArt7.rows?.length) {
                 lines.push("", "📝 Top Articles", "");
                 lines.push("7d | 30d | Avg Read | Article");
 
-                for (const r of topArt.rows.slice(0, 10)) {
-                    // With 2 date ranges, metrics alternate: [7d_views, 7d_dur, 30d_views, 30d_dur]
+                for (const r of topArt7.rows.slice(0, 10)) {
+                    const path = dv(r, 0);
                     const views7 = mv(r, 0);
                     const dur7 = mv(r, 1);
-                    const views30 = mv(r, 2);
-                    const dur30 = mv(r, 3);
-                    const totalViewsCombined = views7 + views30;
-                    const totalDur = dur7 + dur30;
-                    const avgRead = totalViewsCombined > 0 ? totalDur / totalViewsCombined : 0;
-                    const slug = slugFromPath(dv(r, 0));
+                    const views30 = views30ByPath.get(path) ?? 0;
+                    const avgRead = views7 > 0 ? dur7 / views7 : 0;
+                    const slug = slugFromPath(path);
 
                     lines.push(
                         `${padStart(String(views7), 3)} | ${padStart(String(views30), 3)} | ${pad(fmtDuration(avgRead), 8)} | ${slug}`
@@ -221,41 +233,47 @@ export async function getDailyAnalyticsReport(): Promise<string | null> {
 
         // --- 5. Trending Articles (7d vs prev 7d growth) ---
         try {
-            const [trendRes] = await client.runReport({
-                property: prop,
-                dateRanges: [
-                    { startDate: "7daysAgo", endDate: "yesterday" },
-                    { startDate: "14daysAgo", endDate: "8daysAgo" },
-                ],
-                dimensions: [{ name: "pagePath" }],
-                metrics: [{ name: "screenPageViews" }],
+            const articleFilterTrend = {
                 dimensionFilter: {
                     filter: {
                         fieldName: "pagePath",
-                        stringFilter: { matchType: "BEGINS_WITH", value: ARTICLE_PREFIX },
+                        stringFilter: { matchType: "BEGINS_WITH" as const, value: ARTICLE_PREFIX },
                     },
                 },
-                limit: 20,
-                orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+            };
+            const [trendCurr] = await client.runReport({
+                property: prop,
+                dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
+                dimensions: [{ name: "pagePath" }],
+                metrics: [{ name: "screenPageViews" }],
+                ...articleFilterTrend,
+                limit: 50,
             });
+            const [trendPrev] = await client.runReport({
+                property: prop,
+                dateRanges: [{ startDate: "14daysAgo", endDate: "8daysAgo" }],
+                dimensions: [{ name: "pagePath" }],
+                metrics: [{ name: "screenPageViews" }],
+                ...articleFilterTrend,
+                limit: 50,
+            });
+            const prevByPath = new Map<string, number>();
+            for (const r of trendPrev.rows ?? []) prevByPath.set(dv(r, 0), mv(r, 0));
 
-            if (trendRes.rows?.length) {
-                const trending: Array<{ slug: string; growth: number }> = [];
-                for (const r of trendRes.rows) {
-                    const curr = mv(r, 0);
-                    const prev = mv(r, 1);
-                    const growth = curr - prev;
-                    if (growth > 0) {
-                        trending.push({ slug: slugFromPath(dv(r, 0)), growth });
-                    }
-                }
-                trending.sort((a, b) => b.growth - a.growth);
+            const trending: Array<{ slug: string; growth: number }> = [];
+            for (const r of trendCurr.rows ?? []) {
+                const path = dv(r, 0);
+                const curr = mv(r, 0);
+                const prev = prevByPath.get(path) ?? 0;
+                const growth = curr - prev;
+                if (growth > 0) trending.push({ slug: slugFromPath(path), growth });
+            }
+            trending.sort((a, b) => b.growth - a.growth);
 
-                if (trending.length > 0) {
-                    lines.push("", "", "🔥 Trending Articles", "");
-                    for (const t of trending.slice(0, 5)) {
-                        lines.push(`+${t.growth}  ${t.slug}`);
-                    }
+            if (trending.length > 0) {
+                lines.push("", "", "🔥 Trending Articles", "");
+                for (const t of trending.slice(0, 5)) {
+                    lines.push(`+${t.growth}  ${t.slug}`);
                 }
             }
         } catch (e) {
