@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { articles } from "@/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, ilike, or, inArray } from "drizzle-orm";
 
 function mapRow(r: typeof articles.$inferSelect) {
     return {
@@ -45,9 +45,19 @@ export async function GET(request: Request) {
             return NextResponse.json(mapRow(row));
         }
 
+        const q = searchParams.get("q")?.trim();
+
         const conditions = [];
         if (!includeDrafts) conditions.push(eq(articles.published, true));
         if (category?.trim()) conditions.push(eq(articles.category, category.trim()));
+        if (q) {
+            conditions.push(
+                or(
+                    ilike(articles.title, `%${q}%`),
+                    ilike(articles.excerpt, `%${q}%`)
+                )!
+            );
+        }
 
         const rows =
             conditions.length > 0
