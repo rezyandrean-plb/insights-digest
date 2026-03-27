@@ -25,8 +25,12 @@ export const metadata: Metadata = {
   description:
     "Your trusted source for Singapore real estate news, market analysis, property trends, and investment insights.",
   icons: {
-    icon: "/images/insightsdigest-icon.webp",
-    apple: "/images/insightsdigest-icon.webp",
+    icon: [
+      { url: "/images/insightsdigest-icon.webp", type: "image/webp" },
+      { url: "/images/insightsdigest-icon.webp", sizes: "192x192", type: "image/webp" },
+    ],
+    apple: { url: "/images/insightsdigest-icon.webp", type: "image/webp" },
+    shortcut: "/images/insightsdigest-icon.webp",
   },
   openGraph: {
     title: "Insights — Singapore Real Estate News & Analysis",

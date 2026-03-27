@@ -1,10 +1,10 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { webinars } from "@/lib/data";
-import type { Article, Reel, NewLaunchItem, WebinarItem } from "@/lib/data";
+import { db } from "@/db";
+import { articles, homeTourSeries, siteSettings } from "@/db/schema";
+import { and, desc, eq } from "drizzle-orm";
+import type { Article } from "@/lib/data";
 import type { HomeTourItem } from "@/lib/data";
 import type { HomepageConfig } from "@/lib/homepage-config";
+import { DEFAULT_HOMEPAGE_CONFIG, mergeWithDefault } from "@/lib/homepage-config";
 import HeroSection from "@/components/home/HeroSection";
 import LatestPosts from "@/components/home/LatestPosts";
 import FeaturedStories from "@/components/home/FeaturedStories";
@@ -13,68 +13,122 @@ import OurPodcast from "@/components/home/OurPodcast";
 import OurHomeTours from "@/components/home/OurHomeTours";
 import FeaturedArticles from "@/components/home/FeaturedArticles";
 import Newsletter from "@/components/Newsletter";
-import { DEFAULT_HOMEPAGE_CONFIG, mergeWithDefault } from "@/lib/homepage-config";
 
-export default function HomePage() {
-  const [config, setConfig] = useState<HomepageConfig | null>(null);
-  const [heroArticle, setHeroArticle] = useState<Article | null>(null);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [reelsList, setReelsList] = useState<Reel[]>([]);
-  const [newLaunchItems, setNewLaunchItems] = useState<NewLaunchItem[]>([]);
-  const [homeToursList, setHomeToursList] = useState<HomeTourItem[]>([]);
+function mapArticle(r: typeof articles.$inferSelect): Article {
+  return {
+    id: String(r.id),
+    slug: r.slug,
+    title: r.title,
+    excerpt: r.excerpt,
+    content: r.content,
+    sections: r.sections,
+    category: r.category,
+    image: r.image,
+    author: r.author,
+    date: r.date,
+    readTime: r.readTime,
+    featured: r.featured,
+    isHero: r.isHero,
+    published: r.published,
+  } as Article;
+}
 
-  useEffect(() => {
-    fetch("/api/homepage", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => setConfig(mergeWithDefault(data)))
-      .catch(() => setConfig(DEFAULT_HOMEPAGE_CONFIG));
-  }, []);
+function mapHomeTour(r: typeof homeTourSeries.$inferSelect): HomeTourItem {
+  return {
+    id: String(r.id),
+    slug: r.slug,
+    title: r.title,
+    excerpt: r.excerpt,
+    image: r.image,
+    category: r.category,
+    readTime: r.readTime,
+    isHero: r.isHero,
+  } as HomeTourItem;
+}
 
-  useEffect(() => {
-    fetch("/api/articles/hero")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.id) setHeroArticle(data);
-      })
-      .catch(() => {});
-  }, []);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/articles").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/reels").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/new-launches").then((r) => (r.ok ? r.json() : [])),
-      fetch("/api/home-tours").then((r) => (r.ok ? r.json() : [])),
-    ])
-      .then(([a, r, n, h]) => {
-        setArticles(Array.isArray(a) ? a : []);
-        setReelsList(Array.isArray(r) ? r : []);
-        setNewLaunchItems(Array.isArray(n) ? n : []);
-        setHomeToursList(Array.isArray(h) ? h : []);
-      })
-      .catch(() => {});
-  }, []);
+async function getHomepageConfig(): Promise<HomepageConfig> {
+  try {
+    const [row] = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.key, "homepage"))
+      .limit(1);
 
-  // While config is loading, hide Our Methodology (and other admin-toggled sections) so we
-  // don't flash content the admin has hidden when navigating to the homepage from another page.
-  const cfg =
-    config ??
-    ({
-      ...DEFAULT_HOMEPAGE_CONFIG,
-      sections: { ...DEFAULT_HOMEPAGE_CONFIG.sections, ourMethodology: false },
-    } as HomepageConfig);
+    if (!row || !row.value) return DEFAULT_HOMEPAGE_CONFIG;
+
+    try {
+      const parsed = JSON.parse(row.value) as Partial<HomepageConfig>;
+      return mergeWithDefault(parsed);
+    } catch {
+      return DEFAULT_HOMEPAGE_CONFIG;
+    }
+  } catch {
+    return DEFAULT_HOMEPAGE_CONFIG;
+  }
+}
+
+async function getHeroArticle(): Promise<Article | null> {
+  try {
+    const [hero] = await db
+      .select()
+      .from(articles)
+      .where(and(eq(articles.isHero, true), eq(articles.published, true)))
+      .limit(1);
+
+    return hero ? mapArticle(hero) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getArticles(): Promise<Article[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(articles)
+      .where(eq(articles.published, true))
+      .orderBy(desc(articles.isHero), desc(articles.id));
+
+    return rows.map(mapArticle);
+  } catch {
+    return [];
+  }
+}
+
+async function getHomeTours(): Promise<HomeTourItem[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(homeTourSeries)
+      .orderBy(desc(homeTourSeries.isHero), desc(homeTourSeries.id));
+
+    return rows.map(mapHomeTour);
+  } catch {
+    return [];
+  }
+}
+
+export default async function HomePage() {
+  const [config, heroArticle, articlesList, homeToursList] =
+    await Promise.all([
+      getHomepageConfig(),
+      getHeroArticle(),
+      getArticles(),
+      getHomeTours(),
+    ]);
+
+  const cfg = config;
   const limits = cfg.limits;
   const titles = cfg.titles;
   const sections = cfg.sections;
 
-  const latestPosts = articles.slice(1, 1 + limits.latestPosts);
-  const featuredArticles = articles.slice(3, 3 + limits.featuredStories);
-  const reelsSlice = reelsList.slice(0, limits.reels);
-  const newLaunchSlice = newLaunchItems.slice(0, limits.newLaunches);
-  const webinarsSlice = webinars.slice(0, limits.webinars) as WebinarItem[];
+  const latestPosts = articlesList.slice(1, 1 + limits.latestPosts);
+  const featuredArticlesList = articlesList.slice(3, 3 + limits.featuredStories);
   const homeTours = homeToursList.slice(0, limits.homeTours);
 
-  const heroForDisplay = heroArticle ?? articles[0];
+  const heroForDisplay = heroArticle ?? articlesList[0];
 
   return (
     <>
@@ -84,8 +138,8 @@ export default function HomePage() {
       {sections.latestPosts && latestPosts.length > 0 ? (
         <LatestPosts articles={latestPosts} title={titles.latestPosts} />
       ) : null}
-      {sections.featuredStories && featuredArticles.length > 0 ? (
-        <FeaturedStories articles={featuredArticles} title={titles.featuredStories} />
+      {sections.featuredStories && featuredArticlesList.length > 0 ? (
+        <FeaturedStories articles={featuredArticlesList} title={titles.featuredStories} />
       ) : null}
       {sections.ourMethodology ? (
         <OurMethodology
@@ -105,8 +159,8 @@ export default function HomePage() {
       {sections.ourHomeTours && homeTours.length > 0 ? (
         <OurHomeTours items={homeTours} title={titles.ourHomeTours} />
       ) : null}
-      {sections.featuredArticles && articles.length > 0 ? (
-        <FeaturedArticles articles={articles} title={titles.featuredArticles} />
+      {sections.featuredArticles && articlesList.length > 0 ? (
+        <FeaturedArticles articles={articlesList} title={titles.featuredArticles} />
       ) : null}
       {sections.newsletter ? <Newsletter /> : null}
     </>
