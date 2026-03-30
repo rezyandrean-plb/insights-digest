@@ -46,6 +46,8 @@ export async function GET(request: Request) {
         }
 
         const q = searchParams.get("q")?.trim();
+        const limitParam = parseInt(searchParams.get("limit") ?? "", 10);
+        const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : undefined;
 
         const conditions = [];
         if (!includeDrafts) conditions.push(eq(articles.published, true));
@@ -59,18 +61,19 @@ export async function GET(request: Request) {
             );
         }
 
-        const rows =
-            conditions.length > 0
-                ? await db
-                      .select()
-                      .from(articles)
-                      .where(and(...conditions))
-                      .orderBy(desc(articles.isHero), desc(articles.id))
-                : await db
-                      .select()
-                      .from(articles)
-                      .orderBy(desc(articles.isHero), desc(articles.id));
+        let query = db
+            .select()
+            .from(articles)
+            .orderBy(desc(articles.isHero), desc(articles.id));
 
+        if (conditions.length > 0) {
+            query = query.where(and(...conditions)) as typeof query;
+        }
+        if (limit) {
+            query = query.limit(limit) as typeof query;
+        }
+
+        const rows = await query;
         return NextResponse.json(rows.map(mapRow));
     } catch (error) {
         console.error("Failed to fetch articles:", error);

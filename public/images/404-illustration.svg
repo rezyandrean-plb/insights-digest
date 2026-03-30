@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 480" fill="none">
+  <!-- Shadow / base ellipse -->
+  <ellipse cx="300" cy="420" rx="200" ry="40" fill="#e0f5f2" opacity="0.6"/>
+
+  <!-- Monitor stand -->
+  <rect x="270" y="370" width="60" height="30" rx="4" fill="#2a9d8f"/>
+  <rect x="240" y="395" width="120" height="10" rx="5" fill="#238b7e"/>
+
+  <!-- Monitor body -->
+  <rect x="130" y="80" width="340" height="300" rx="16" fill="#1a3c40" stroke="#1a3c40" stroke-width="2"/>
+  <!-- Screen bezel -->
+  <rect x="145" y="95" width="310" height="255" rx="8" fill="#f8f9fa"/>
+
+  <!-- Browser top bar -->
+  <rect x="145" y="95" width="310" height="30" rx="8" fill="#e8ecef"/>
+  <rect x="145" y="113" width="310" height="12" fill="#e8ecef"/>
+  <!-- Browser dots -->
+  <circle cx="165" cy="110" r="5" fill="#e74c3c"/>
+  <circle cx="182" cy="110" r="5" fill="#f1c40f"/>
+  <circle cx="199" cy="110" r="5" fill="#2ecc71"/>
+  <!-- URL bar -->
+  <rect x="220" y="103" width="180" height="14" rx="7" fill="#fff"/>
+  <!-- Browser icons -->
+  <circle cx="420" cy="110" r="5" fill="#bdc3c7"/>
+  <circle cx="436" cy="110" r="5" fill="#bdc3c7"/>
+
+  <!-- 404 big text -->
+  <text x="300" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="72" font-weight="900" fill="#1a3c40" letter-spacing="4">404</text>
+
+  <!-- ERROR text -->
+  <text x="300" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#c0392b" letter-spacing="6">ERROR</text>
+
+  <!-- PAGE NOT FOUND text -->
+  <text x="300" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a3c40" letter-spacing="3">PAGE NOT FOUND</text>
+
+  <!-- Decorative lines on screen -->
+  <rect x="220" y="300" width="160" height="6" rx="3" fill="#e8ecef"/>
+  <rect x="240" y="314" width="120" height="6" rx="3" fill="#e8ecef"/>
+  <rect x="260" y="328" width="80" height="6" rx="3" fill="#e8ecef"/>
+
+  <!-- Power indicator -->
+  <circle cx="300" cy="365" r="4" fill="#2ecc71"/>
+
+  <!-- Cloud left -->
+  <g transform="translate(95, 50)">
+    <ellipse cx="30" cy="20" rx="25" ry="15" fill="#e0f5f2"/>
+    <ellipse cx="55" cy="22" rx="18" ry="12" fill="#e0f5f2"/>
+    <ellipse cx="12" cy="24" rx="14" ry="10" fill="#e0f5f2"/>
+  </g>
+
+  <!-- Cloud right small -->
+  <g transform="translate(430, 70)">
+    <ellipse cx="20" cy="15" rx="18" ry="11" fill="#e0f5f2"/>
+    <ellipse cx="38" cy="17" rx="13" ry="9" fill="#e0f5f2"/>
+    <ellipse cx="7" cy="18" rx="10" ry="7" fill="#e0f5f2"/>
+  </g>
+
+  <!-- Calculator/widget top-right -->
+  <g transform="translate(480, 60)">
+    <rect x="0" y="0" width="55" height="65" rx="8" fill="#1a3c40"/>
+    <text x="14" y="28" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#e0f5f2">X</text>
+    <text x="36" y="28" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#e0f5f2">X</text>
+    <line x1="12" y1="40" x2="43" y2="40" stroke="#2a9d8f" stroke-width="3" stroke-linecap="round"/>
+    <text x="20" y="56" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#e0f5f2">U</text>
+  </g>
+
+  <!-- Unplugged cord -->
+  <g transform="translate(270, 410)">
+    <!-- Cable -->
+    <path d="M30 0 C30 15, 10 20, 10 35 C10 50, 30 50, 30 65" stroke="#1a3c40" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- Plug body -->
+    <rect x="15" y="60" width="30" height="22" rx="4" fill="#1a3c40"/>
+    <!-- Plug prongs -->
+    <rect x="22" y="82" width="5" height="12" rx="2" fill="#555"/>
+    <rect x="33" y="82" width="5" height="12" rx="2" fill="#555"/>
+  </g>
+
+  <!-- Small decorative elements -->
+  <circle cx="520" cy="160" r="4" fill="#2a9d8f" opacity="0.4"/>
+  <circle cx="90" cy="180" r="3" fill="#2a9d8f" opacity="0.3"/>
+  <circle cx="510" cy="300" r="5" fill="#e0f5f2"/>
+  <circle cx="85" cy="280" r="6" fill="#e0f5f2"/>
+</svg>

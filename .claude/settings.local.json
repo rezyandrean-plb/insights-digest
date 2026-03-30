@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npx drizzle-kit push)",
-      "Bash(cat \"/Users/nadrean/Documents/PLB/silo-projects/src/app/admin/\\(dashboard\\)/articles/page.tsx\")"
+      "Bash(cat \"/Users/nadrean/Documents/PLB/silo-projects/src/app/admin/\\(dashboard\\)/articles/page.tsx\")",
+      "Bash(sips -s format ico /tmp/favicon-48.png --out /Users/nadrean/Documents/PLB/silo-projects/src/app/favicon.ico)",
+      "Bash(cp /tmp/favicon-48.png /Users/nadrean/Documents/PLB/silo-projects/src/app/favicon.ico)"
     ]
   }
 }

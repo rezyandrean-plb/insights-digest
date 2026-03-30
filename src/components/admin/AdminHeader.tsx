@@ -18,6 +18,7 @@ import {
     LogOut,
     ChevronDown,
     Mail,
+    Newspaper,
 } from "lucide-react";
 
 const adminNav = [
@@ -27,6 +28,7 @@ const adminNav = [
 ];
 
 const enquiriesNav = { href: "/admin/enquiries", label: "Enquiries", icon: Mail, exact: false };
+const newsletterNav = { href: "/admin/newsletter", label: "Newsletter", icon: Newspaper, exact: false };
 
 const manageItems = [
     { href: "/admin/homepage", label: "Homepage", icon: Globe, description: "Manage homepage content & sections" },
@@ -200,6 +202,19 @@ export default function AdminHeader({ email }: { email: string }) {
                             <enquiriesNav.icon className="w-4 h-4" />
                             {enquiriesNav.label}
                         </Link>
+
+                        {/* Newsletter */}
+                        <Link
+                            href={newsletterNav.href}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                isActive(newsletterNav.href, newsletterNav.exact)
+                                    ? "bg-white/15 text-white"
+                                    : "text-white/60 hover:text-white hover:bg-white/8"
+                            }`}
+                        >
+                            <newsletterNav.icon className="w-4 h-4" />
+                            {newsletterNav.label}
+                        </Link>
                     </nav>
                 </div>
 
@@ -368,6 +383,19 @@ export default function AdminHeader({ email }: { email: string }) {
                             >
                                 <enquiriesNav.icon className="w-4 h-4" />
                                 {enquiriesNav.label}
+                            </Link>
+
+                            <Link
+                                href={newsletterNav.href}
+                                onClick={() => setMobileOpen(false)}
+                                className={`flex items-center gap-2.5 text-sm font-medium py-2.5 px-3 rounded-lg transition-colors ${
+                                    isActive(newsletterNav.href, newsletterNav.exact)
+                                        ? "bg-white/15 text-white"
+                                        : "text-white/60 hover:text-white hover:bg-white/8"
+                                }`}
+                            >
+                                <newsletterNav.icon className="w-4 h-4" />
+                                {newsletterNav.label}
                             </Link>
 
                             <Link

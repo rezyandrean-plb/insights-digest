@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Article } from "@/lib/data";
@@ -10,18 +10,33 @@ const filterTabs = ["Market Analysis", "Real Estate News", "Guides"] as const;
 type FeaturedFilter = (typeof filterTabs)[number];
 
 interface FeaturedArticlesProps {
-    articles: Article[];
     title?: string;
 }
 
-export default function FeaturedArticles({ articles, title = "Featured Articles" }: FeaturedArticlesProps) {
+export default function FeaturedArticles({ title = "Featured Articles" }: FeaturedArticlesProps) {
     const [activeFilter, setActiveFilter] = useState<FeaturedFilter>("Market Analysis");
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const filteredArticles = useMemo(() => {
-        return articles
-            .filter((a) => a.category === activeFilter)
-            .slice(0, 6);
-    }, [activeFilter, articles]);
+    const fetchArticles = useCallback(async (category: string) => {
+        setLoading(true);
+        try {
+            const res = await fetch(
+                `/api/articles?category=${encodeURIComponent(category)}&limit=6`
+            );
+            if (!res.ok) throw new Error("Failed to fetch");
+            const data = await res.json();
+            setArticles(Array.isArray(data) ? data.slice(0, 6) : []);
+        } catch {
+            setArticles([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchArticles(activeFilter);
+    }, [activeFilter, fetchArticles]);
 
     return (
         <section className="py-12 sm:py-16 lg:py-20">
@@ -64,41 +79,51 @@ export default function FeaturedArticles({ articles, title = "Featured Articles"
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 lg:gap-x-8 lg:gap-y-12"
                     >
-                        {filteredArticles.map((article) => (
-                            <Link
-                                key={article.id}
-                                href={`/article/${article.slug}`}
-                                className="group block"
-                            >
-                                <motion.div
-                                    whileHover={{ y: -4 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <div className="relative aspect-square rounded-2xl overflow-hidden mb-4">
-                                        <img
-                                            src={article.image}
-                                            alt={article.title}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                        />
-                                    </div>
-                                    <h3 className="text-base font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors font-[var(--font-poppins)]">
-                                        {article.title}
-                                    </h3>
-                                    <p className="text-sm text-black mt-1.5 leading-relaxed line-clamp-2">
-                                        {article.excerpt}
-                                    </p>
-                                    <div className="flex items-center text-xs text-black mt-2.5">
-                                        <span className="text-primary font-medium">{article.category}</span>
-                                        <span className="mx-2 text-secondary/30">|</span>
-                                        <span>{article.readTime}</span>
-                                    </div>
-                                </motion.div>
-                            </Link>
-                        ))}
+                        {loading
+                            ? Array.from({ length: 6 }).map((_, i) => (
+                                  <div key={i} className="animate-pulse">
+                                      <div className="aspect-square rounded-2xl bg-section-bg mb-4" />
+                                      <div className="h-4 bg-section-bg rounded w-3/4 mb-2" />
+                                      <div className="h-3 bg-section-bg rounded w-full" />
+                                  </div>
+                              ))
+                            : articles.map((article) => (
+                                  <Link
+                                      key={article.id}
+                                      href={`/article/${article.slug}`}
+                                      className="group block"
+                                  >
+                                      <motion.div
+                                          whileHover={{ y: -4 }}
+                                          transition={{ duration: 0.2 }}
+                                      >
+                                          <div className="relative aspect-square rounded-2xl overflow-hidden mb-4">
+                                              <img
+                                                  src={article.image}
+                                                  alt={article.title}
+                                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                              />
+                                          </div>
+                                          <h3 className="text-base font-bold text-secondary leading-snug line-clamp-2 group-hover:text-primary transition-colors font-[var(--font-poppins)]">
+                                              {article.title}
+                                          </h3>
+                                          <p className="text-sm text-black mt-1.5 leading-relaxed line-clamp-2">
+                                              {article.excerpt}
+                                          </p>
+                                          <div className="flex items-center text-xs text-black mt-2.5">
+                                              <span className="text-primary font-medium">
+                                                  {article.category}
+                                              </span>
+                                              <span className="mx-2 text-secondary/30">|</span>
+                                              <span>{article.readTime}</span>
+                                          </div>
+                                      </motion.div>
+                                  </Link>
+                              ))}
                     </motion.div>
                 </AnimatePresence>
 
-                {filteredArticles.length === 0 && (
+                {!loading && articles.length === 0 && (
                     <div className="text-center py-20">
                         <p className="text-black text-lg">No articles found for this category.</p>
                     </div>
