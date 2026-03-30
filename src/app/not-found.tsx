@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 
 export default function NotFound() {
@@ -45,13 +44,13 @@ export default function NotFound() {
       </p>
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-        <Link
+        <a
           href="/"
           className="inline-flex h-12 min-w-[160px] items-center justify-center rounded-full px-8 text-base font-medium text-white transition-colors hover:opacity-90"
           style={{ backgroundColor: "var(--primary-dark)" }}
         >
           Home
-        </Link>
+        </a>
         <button
           onClick={() => window.location.reload()}
           className="inline-flex h-12 min-w-[160px] items-center justify-center rounded-full border-2 px-8 text-base font-medium transition-colors hover:bg-gray-50"

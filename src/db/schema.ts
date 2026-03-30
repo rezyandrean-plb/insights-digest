@@ -90,6 +90,12 @@ export const adminUsers = pgTable("admin_users", {
         .$onUpdate(() => new Date()),
 });
 
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+    id: serial("id").primaryKey(),
+    email: text("email").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const enquiries = pgTable("enquiries", {
     id: serial("id").primaryKey(),
     enquiryAbout: text("enquiry_about").notNull(),

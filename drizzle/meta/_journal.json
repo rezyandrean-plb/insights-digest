@@ -15,6 +15,13 @@
       "when": 1772619439143,
       "tag": "0001_add_published_column",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774853446665,
+      "tag": "0002_tired_sleepwalker",
+      "breakpoints": true
     }
   ]
 }

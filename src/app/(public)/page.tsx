@@ -46,7 +46,7 @@ function mapHomeTour(r: typeof homeTourSeries.$inferSelect): HomeTourItem {
   } as HomeTourItem;
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 async function getHomepageConfig(): Promise<HomepageConfig> {
   try {
@@ -69,15 +69,30 @@ async function getHomepageConfig(): Promise<HomepageConfig> {
   }
 }
 
+const homepageColumns = {
+  id: articles.id,
+  slug: articles.slug,
+  title: articles.title,
+  excerpt: articles.excerpt,
+  category: articles.category,
+  image: articles.image,
+  author: articles.author,
+  date: articles.date,
+  readTime: articles.readTime,
+  featured: articles.featured,
+  isHero: articles.isHero,
+  published: articles.published,
+};
+
 async function getHeroArticle(): Promise<Article | null> {
   try {
     const [hero] = await db
-      .select()
+      .select(homepageColumns)
       .from(articles)
       .where(and(eq(articles.isHero, true), eq(articles.published, true)))
       .limit(1);
 
-    return hero ? mapArticle(hero) : null;
+    return hero ? mapArticle(hero as typeof articles.$inferSelect) : null;
   } catch {
     return null;
   }
@@ -86,12 +101,13 @@ async function getHeroArticle(): Promise<Article | null> {
 async function getArticles(): Promise<Article[]> {
   try {
     const rows = await db
-      .select()
+      .select(homepageColumns)
       .from(articles)
       .where(eq(articles.published, true))
-      .orderBy(desc(articles.isHero), desc(articles.id));
+      .orderBy(desc(articles.isHero), desc(articles.id))
+      .limit(20);
 
-    return rows.map(mapArticle);
+    return rows.map((r) => mapArticle(r as typeof articles.$inferSelect));
   } catch {
     return [];
   }
@@ -102,7 +118,8 @@ async function getHomeTours(): Promise<HomeTourItem[]> {
     const rows = await db
       .select()
       .from(homeTourSeries)
-      .orderBy(desc(homeTourSeries.isHero), desc(homeTourSeries.id));
+      .orderBy(desc(homeTourSeries.isHero), desc(homeTourSeries.id))
+      .limit(10);
 
     return rows.map(mapHomeTour);
   } catch {
