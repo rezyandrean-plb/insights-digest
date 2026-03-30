@@ -46,7 +46,7 @@ function mapHomeTour(r: typeof homeTourSeries.$inferSelect): HomeTourItem {
   } as HomeTourItem;
 }
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 async function getHomepageConfig(): Promise<HomepageConfig> {
   try {
@@ -105,7 +105,7 @@ async function getArticles(): Promise<Article[]> {
       .from(articles)
       .where(eq(articles.published, true))
       .orderBy(desc(articles.isHero), desc(articles.id))
-      .limit(20);
+      .limit(10);
 
     return rows.map((r) => mapArticle(r as typeof articles.$inferSelect));
   } catch {
@@ -176,8 +176,8 @@ export default async function HomePage() {
       {sections.ourHomeTours && homeTours.length > 0 ? (
         <OurHomeTours items={homeTours} title={titles.ourHomeTours} />
       ) : null}
-      {sections.featuredArticles && articlesList.length > 0 ? (
-        <FeaturedArticles articles={articlesList} title={titles.featuredArticles} />
+      {sections.featuredArticles ? (
+        <FeaturedArticles title={titles.featuredArticles} />
       ) : null}
       {sections.newsletter ? <Newsletter /> : null}
     </>
