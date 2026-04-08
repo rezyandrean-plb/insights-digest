@@ -1,36 +1,23 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ArrowRight, Loader2 } from "lucide-react";
-import type { Article, ArticleCategory } from "@/lib/data";
+import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import type { ArticleListItem } from "@/lib/articles";
 import ScrollReveal from "@/components/ScrollReveal";
 import Newsletter from "@/components/Newsletter";
 
 const ARTICLES_PER_PAGE = 9;
 
 type CategoryArticlesPageProps = {
-    category: ArticleCategory;
+    articles: ArticleListItem[];
     title: string;
 };
 
-export default function CategoryArticlesPage({ category, title }: CategoryArticlesPageProps) {
-    const [articlesList, setArticlesList] = useState<Article[]>([]);
-    const [loading, setLoading] = useState(true);
+export default function CategoryArticlesPage({ articles: articlesList, title }: CategoryArticlesPageProps) {
     const [currentPage, setCurrentPage] = useState(1);
-
-    useEffect(() => {
-        const encoded = encodeURIComponent(category);
-        fetch(`/api/articles?category=${encoded}`)
-            .then((res) => {
-                if (!res.ok) throw new Error("Failed to fetch");
-                return res.json();
-            })
-            .then((data: Article[]) => setArticlesList(Array.isArray(data) ? data : []))
-            .catch(() => setArticlesList([]))
-            .finally(() => setLoading(false));
-    }, [category]);
 
     const totalPages = Math.ceil(articlesList.length / ARTICLES_PER_PAGE);
     const paginatedArticles = articlesList.slice(
@@ -56,27 +43,21 @@ export default function CategoryArticlesPage({ category, title }: CategoryArticl
         return pages;
     }, [currentPage, totalPages]);
 
-    if (loading) {
-        return (
-            <div className="min-h-[50vh] flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                <p className="text-secondary/70 text-sm mt-4">Loading…</p>
-            </div>
-        );
-    }
-
     return (
         <>
             {/* Hero Banner */}
             <section className="relative">
                 <div className="relative h-[360px] sm:h-[420px] lg:h-[480px] overflow-hidden">
-                    {heroArticle ? (
+                        {heroArticle ? (
                         <>
                             {heroArticle.image ? (
-                                <img
+                                <Image
                                     src={heroArticle.image}
                                     alt={`Cover image for ${heroArticle.title}`}
                                     className="w-full h-full object-cover"
+                                    fill
+                                    sizes="100vw"
+                                    priority
                                 />
                             ) : (
                                 <div className="w-full h-full bg-secondary/10" />
@@ -164,10 +145,12 @@ export default function CategoryArticlesPage({ category, title }: CategoryArticl
                                     >
                                         <div className="relative aspect-square rounded-2xl overflow-hidden mb-4">
                                             {article.image ? (
-                                                <img
+                                                <Image
                                                     src={article.image}
                                                     alt={`Cover image for ${article.title}`}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    fill
+                                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                                 />
                                             ) : (
                                                 <div className="w-full h-full bg-secondary/10" aria-hidden />

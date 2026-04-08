@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getArticlesByCategory } from "@/lib/articles";
 import CategoryArticlesPage from "@/components/CategoryArticlesPage";
 
 export const metadata: Metadata = {
@@ -6,6 +7,7 @@ export const metadata: Metadata = {
     description: "Smart home tech, interior design trends, and living innovations for modern Singapore homes.",
 };
 
-export default function HomeRadarPage() {
-    return <CategoryArticlesPage category="Home Radar" title="Home Radar" />;
+export default async function HomeRadarPage() {
+    const articles = await getArticlesByCategory("Home Radar");
+    return <CategoryArticlesPage articles={articles} title="Home Radar" />;
 }

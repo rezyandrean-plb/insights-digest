@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getArticlesByCategory } from "@/lib/articles";
 import CategoryArticlesPage from "@/components/CategoryArticlesPage";
 
 export const metadata: Metadata = {
@@ -6,6 +7,7 @@ export const metadata: Metadata = {
     description: "Stay updated with the latest real estate news, developer launches, and property market updates in Singapore.",
 };
 
-export default function RealEstateNewsPage() {
-    return <CategoryArticlesPage category="Real Estate News" title="Real Estate News" />;
+export default async function RealEstateNewsPage() {
+    const articles = await getArticlesByCategory("Real Estate News");
+    return <CategoryArticlesPage articles={articles} title="Real Estate News" />;
 }

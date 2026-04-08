@@ -2,6 +2,8 @@ import { BetaAnalyticsDataClient } from "@google-analytics/data";
 
 const GA4_PROPERTY_ID = process.env.GA4_PROPERTY_ID?.trim();
 const GA_SERVICE_ACCOUNT_JSON = process.env.GA_SERVICE_ACCOUNT_JSON?.trim();
+/** Inclusive start date for lifetime / all-time reports (YYYY-MM-DD). */
+const GA_REPORT_START_DATE = (process.env.GA_REPORT_START_DATE?.trim() || "2018-01-01").slice(0, 10);
 
 /** Compatible with GA4 API IRow (dimensionValues/metricValues can be null; value can be null). */
 type GaRow = {
@@ -70,6 +72,141 @@ function padStart(s: string, len: number): string {
 }
 
 type DateRange = { startDate: string; endDate: string };
+
+const articlePathFilter = {
+    dimensionFilter: {
+        filter: {
+            fieldName: "pagePath",
+            stringFilter: { matchType: "BEGINS_WITH" as const, value: ARTICLE_PREFIX },
+        },
+    },
+};
+
+/** Top Articles, Trending, Engagement — same GA windows as the scheduled daily report (7d / 30d vs yesterday). */
+async function appendDailyStyleArticleSections(
+    client: BetaAnalyticsDataClient,
+    prop: string,
+    lines: string[]
+): Promise<void> {
+    try {
+        const [topArt7] = await client.runReport({
+            property: prop,
+            dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
+            dimensions: [{ name: "pagePath" }],
+            metrics: [{ name: "screenPageViews" }, { name: "userEngagementDuration" }],
+            ...articlePathFilter,
+            limit: 10,
+            orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+        });
+
+        const [topArt30] = await client.runReport({
+            property: prop,
+            dateRanges: [{ startDate: "30daysAgo", endDate: "yesterday" }],
+            dimensions: [{ name: "pagePath" }],
+            metrics: [{ name: "screenPageViews" }],
+            ...articlePathFilter,
+            limit: 100,
+        });
+
+        const views30ByPath = new Map<string, number>();
+        for (const r of topArt30.rows ?? []) {
+            views30ByPath.set(dv(r, 0), mv(r, 0));
+        }
+
+        if (topArt7.rows?.length) {
+            lines.push("", "📝 Top Articles", "");
+            lines.push("7d | 30d | Avg Read | Article");
+
+            for (const r of topArt7.rows.slice(0, 10)) {
+                const path = dv(r, 0);
+                const views7 = mv(r, 0);
+                const dur7 = mv(r, 1);
+                const views30 = views30ByPath.get(path) ?? 0;
+                const avgRead = views7 > 0 ? dur7 / views7 : 0;
+                const slug = slugFromPath(path);
+
+                lines.push(
+                    `${padStart(String(views7), 3)} | ${padStart(String(views30), 3)} | ${pad(fmtDuration(avgRead), 8)} | ${slug}`
+                );
+            }
+        }
+    } catch (e) {
+        console.warn("Top articles failed:", e);
+    }
+
+    try {
+        const [trendCurr] = await client.runReport({
+            property: prop,
+            dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
+            dimensions: [{ name: "pagePath" }],
+            metrics: [{ name: "screenPageViews" }],
+            ...articlePathFilter,
+            limit: 50,
+        });
+        const [trendPrev] = await client.runReport({
+            property: prop,
+            dateRanges: [{ startDate: "14daysAgo", endDate: "8daysAgo" }],
+            dimensions: [{ name: "pagePath" }],
+            metrics: [{ name: "screenPageViews" }],
+            ...articlePathFilter,
+            limit: 50,
+        });
+        const prevByPath = new Map<string, number>();
+        for (const r of trendPrev.rows ?? []) prevByPath.set(dv(r, 0), mv(r, 0));
+
+        const trending: Array<{ slug: string; growth: number }> = [];
+        for (const r of trendCurr.rows ?? []) {
+            const path = dv(r, 0);
+            const curr = mv(r, 0);
+            const prev = prevByPath.get(path) ?? 0;
+            const growth = curr - prev;
+            if (growth > 0) trending.push({ slug: slugFromPath(path), growth });
+        }
+        trending.sort((a, b) => b.growth - a.growth);
+
+        if (trending.length > 0) {
+            lines.push("", "", "🔥 Trending Articles", "");
+            for (const t of trending.slice(0, 5)) {
+                lines.push(`+${t.growth}  ${t.slug}`);
+            }
+        }
+    } catch (e) {
+        console.warn("Trending articles failed:", e);
+    }
+
+    try {
+        const [engRes] = await client.runReport({
+            property: prop,
+            dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
+            dimensions: [{ name: "pagePath" }],
+            metrics: [{ name: "screenPageViews" }, { name: "userEngagementDuration" }],
+            ...articlePathFilter,
+            limit: 20,
+            orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+        });
+
+        if (engRes.rows?.length) {
+            const engaged: Array<{ slug: string; avgSec: number }> = [];
+            for (const r of engRes.rows) {
+                const views = mv(r, 0);
+                const dur = mv(r, 1);
+                if (views >= 3) {
+                    engaged.push({ slug: slugFromPath(dv(r, 0)), avgSec: dur / views });
+                }
+            }
+            engaged.sort((a, b) => b.avgSec - a.avgSec);
+
+            if (engaged.length > 0) {
+                lines.push("", "⏱️ Highest Engagement Articles", "");
+                for (const e of engaged.slice(0, 5)) {
+                    lines.push(`${pad(fmtDuration(e.avgSec), 7)}  ${e.slug}`);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Engagement articles failed:", e);
+    }
+}
 
 export async function getDailyAnalyticsReport(): Promise<string | null> {
     const client = getGaClient();
@@ -173,158 +310,94 @@ export async function getDailyAnalyticsReport(): Promise<string | null> {
             console.warn("Top pages failed:", e);
         }
 
-        // --- 4. Top Articles (7d views, 30d views, avg read time) ---
-        try {
-            const articleFilter = {
-                dimensionFilter: {
-                    filter: {
-                        fieldName: "pagePath",
-                        stringFilter: { matchType: "BEGINS_WITH" as const, value: ARTICLE_PREFIX },
-                    },
-                },
-            };
-
-            // 7d: top 10 by views, with engagement duration (one row per article)
-            const [topArt7] = await client.runReport({
-                property: prop,
-                dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
-                dimensions: [{ name: "pagePath" }],
-                metrics: [{ name: "screenPageViews" }, { name: "userEngagementDuration" }],
-                ...articleFilter,
-                limit: 10,
-                orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
-            });
-
-            // 30d: all article views for lookup (one row per article)
-            const [topArt30] = await client.runReport({
-                property: prop,
-                dateRanges: [{ startDate: "30daysAgo", endDate: "yesterday" }],
-                dimensions: [{ name: "pagePath" }],
-                metrics: [{ name: "screenPageViews" }],
-                ...articleFilter,
-                limit: 100,
-            });
-
-            const views30ByPath = new Map<string, number>();
-            for (const r of topArt30.rows ?? []) {
-                views30ByPath.set(dv(r, 0), mv(r, 0));
-            }
-
-            if (topArt7.rows?.length) {
-                lines.push("", "📝 Top Articles", "");
-                lines.push("7d | 30d | Avg Read | Article");
-
-                for (const r of topArt7.rows.slice(0, 10)) {
-                    const path = dv(r, 0);
-                    const views7 = mv(r, 0);
-                    const dur7 = mv(r, 1);
-                    const views30 = views30ByPath.get(path) ?? 0;
-                    const avgRead = views7 > 0 ? dur7 / views7 : 0;
-                    const slug = slugFromPath(path);
-
-                    lines.push(
-                        `${padStart(String(views7), 3)} | ${padStart(String(views30), 3)} | ${pad(fmtDuration(avgRead), 8)} | ${slug}`
-                    );
-                }
-            }
-        } catch (e) {
-            console.warn("Top articles failed:", e);
-        }
-
-        // --- 5. Trending Articles (7d vs prev 7d growth) ---
-        try {
-            const articleFilterTrend = {
-                dimensionFilter: {
-                    filter: {
-                        fieldName: "pagePath",
-                        stringFilter: { matchType: "BEGINS_WITH" as const, value: ARTICLE_PREFIX },
-                    },
-                },
-            };
-            const [trendCurr] = await client.runReport({
-                property: prop,
-                dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
-                dimensions: [{ name: "pagePath" }],
-                metrics: [{ name: "screenPageViews" }],
-                ...articleFilterTrend,
-                limit: 50,
-            });
-            const [trendPrev] = await client.runReport({
-                property: prop,
-                dateRanges: [{ startDate: "14daysAgo", endDate: "8daysAgo" }],
-                dimensions: [{ name: "pagePath" }],
-                metrics: [{ name: "screenPageViews" }],
-                ...articleFilterTrend,
-                limit: 50,
-            });
-            const prevByPath = new Map<string, number>();
-            for (const r of trendPrev.rows ?? []) prevByPath.set(dv(r, 0), mv(r, 0));
-
-            const trending: Array<{ slug: string; growth: number }> = [];
-            for (const r of trendCurr.rows ?? []) {
-                const path = dv(r, 0);
-                const curr = mv(r, 0);
-                const prev = prevByPath.get(path) ?? 0;
-                const growth = curr - prev;
-                if (growth > 0) trending.push({ slug: slugFromPath(path), growth });
-            }
-            trending.sort((a, b) => b.growth - a.growth);
-
-            if (trending.length > 0) {
-                lines.push("", "", "🔥 Trending Articles", "");
-                for (const t of trending.slice(0, 5)) {
-                    lines.push(`+${t.growth}  ${t.slug}`);
-                }
-            }
-        } catch (e) {
-            console.warn("Trending articles failed:", e);
-        }
-
-        // --- 6. Highest Engagement Articles (avg read time, 7d) ---
-        try {
-            const [engRes] = await client.runReport({
-                property: prop,
-                dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
-                dimensions: [{ name: "pagePath" }],
-                metrics: [
-                    { name: "screenPageViews" },
-                    { name: "userEngagementDuration" },
-                ],
-                dimensionFilter: {
-                    filter: {
-                        fieldName: "pagePath",
-                        stringFilter: { matchType: "BEGINS_WITH", value: ARTICLE_PREFIX },
-                    },
-                },
-                limit: 20,
-                orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
-            });
-
-            if (engRes.rows?.length) {
-                const engaged: Array<{ slug: string; avgSec: number }> = [];
-                for (const r of engRes.rows) {
-                    const views = mv(r, 0);
-                    const dur = mv(r, 1);
-                    if (views >= 3) {
-                        engaged.push({ slug: slugFromPath(dv(r, 0)), avgSec: dur / views });
-                    }
-                }
-                engaged.sort((a, b) => b.avgSec - a.avgSec);
-
-                if (engaged.length > 0) {
-                    lines.push("", "⏱️ Highest Engagement Articles", "");
-                    for (const e of engaged.slice(0, 5)) {
-                        lines.push(`${pad(fmtDuration(e.avgSec), 7)}  ${e.slug}`);
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn("Engagement articles failed:", e);
-        }
+        await appendDailyStyleArticleSections(client, prop, lines);
 
         return lines.join("\n") + fallbackNote;
     } catch (err) {
         console.error("GA report error:", err);
+        return null;
+    }
+}
+
+/**
+ * One-time / on-demand report: all-time totals + Top Pages (all-time), then the same article blocks as the daily report (7d→yesterday).
+ */
+export async function getLifetimeAnalyticsReport(): Promise<string | null> {
+    const client = getGaClient();
+    if (!client || !GA4_PROPERTY_ID) return null;
+
+    const prop = `properties/${GA4_PROPERTY_ID}`;
+    const range: DateRange = { startDate: GA_REPORT_START_DATE, endDate: "today" };
+    const today = new Date();
+    const periodLabel = `${fmtDate(new Date(GA_REPORT_START_DATE + "T12:00:00"))} → ${fmtDate(today)}`;
+
+    try {
+        const [overviewRes] = await client.runReport({
+            property: prop,
+            dateRanges: [range],
+            metrics: [{ name: "activeUsers" }, { name: "screenPageViews" }],
+        });
+
+        const oRow = overviewRes.rows?.[0];
+        if (!oRow?.metricValues?.length) {
+            return `📊 Overall Analytics\n${periodLabel}\n\nNo data for this date range.`;
+        }
+
+        const totalUsers = mv(oRow, 0);
+        const totalViews = mv(oRow, 1);
+
+        let articleViews = 0;
+        try {
+            const [artRes] = await client.runReport({
+                property: prop,
+                dateRanges: [range],
+                dimensions: [{ name: "pagePath" }],
+                metrics: [{ name: "screenPageViews" }],
+                ...articlePathFilter,
+            });
+            for (const r of artRes.rows ?? []) articleViews += mv(r, 0);
+        } catch (e) {
+            console.warn("Lifetime article views failed:", e);
+        }
+
+        const artPct = totalViews > 0 ? Math.round((articleViews / totalViews) * 100) : 0;
+
+        const lines: string[] = [
+            "📊 Overall Analytics",
+            `${periodLabel} (all-time totals)`,
+            "",
+            `Users: ${totalUsers}`,
+            `Page Views: ${totalViews}`,
+            `Articles: ${articleViews} views (${artPct}%)`,
+        ];
+
+        try {
+            const [topPages] = await client.runReport({
+                property: prop,
+                dateRanges: [range],
+                dimensions: [{ name: "pagePath" }],
+                metrics: [{ name: "screenPageViews" }],
+                limit: 5,
+                orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+            });
+            if (topPages.rows?.length) {
+                lines.push("", "Top Pages (Views)");
+                const maxViews = String(mv(topPages.rows[0], 0)).length;
+                for (const r of topPages.rows.slice(0, 5)) {
+                    const views = String(mv(r, 0));
+                    const path = dv(r, 0) || "/";
+                    lines.push(`${padStart(views, maxViews)}  ${path}`);
+                }
+            }
+        } catch (e) {
+            console.warn("Lifetime top pages failed:", e);
+        }
+
+        await appendDailyStyleArticleSections(client, prop, lines);
+
+        return lines.join("\n");
+    } catch (err) {
+        console.error("Lifetime GA report error:", err);
         return null;
     }
 }
