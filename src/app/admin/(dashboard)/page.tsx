@@ -23,6 +23,7 @@ interface Counts {
     homeTours: number | null;
 }
 
+// Menu navigations
 const NAV_SECTIONS = [
     {
         icon: LayoutDashboard,
@@ -94,6 +95,7 @@ const NAV_SECTIONS = [
     },
 ];
 
+// Upper cards section
 const STAT_CARDS = [
     { key: "articles" as keyof Counts, label: "Articles", icon: FileText, color: "text-secondary", bg: "bg-secondary/10" },
     { key: "reels" as keyof Counts, label: "Reels", icon: Film, color: "text-accent", bg: "bg-accent/10" },
